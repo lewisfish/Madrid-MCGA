@@ -1,0 +1,38 @@
+
+
+*******************************************************************************
+Thu Mar 30 11:10:24 2017
+
+
+FIT:    data read from 'test.dat'
+        format = z
+        #datapoints = 100
+        residuals are weighted equally (unit weight)
+
+function used for fitting: f(x)
+	f(x) = a * exp(-(x-mu)**2 / (2.*sigma)**2)
+fitted parameters initialized with current variable values
+
+iter      chisq       delta/lim  lambda   a             mu            sigma        
+   0 5.8994057102e+07   0.00e+00  1.16e+03    1.500000e+03   1.000000e+02   2.500000e+01
+  36 2.5635517745e+06  -5.44e-04  1.16e-02    1.460178e+03   4.948778e+01   2.131516e+01
+
+After 36 iterations the fit converged.
+final sum of squares of residuals : 2.56355e+06
+rel. change during last iteration : -5.44082e-09
+
+degrees of freedom    (FIT_NDF)                        : 97
+rms of residuals      (FIT_STDFIT) = sqrt(WSSR/ndf)    : 162.568
+variance of residuals (reduced chisquare) = WSSR/ndf   : 26428.4
+
+Final set of parameters            Asymptotic Standard Error
+=======================            ==========================
+a               = 1460.18          +/- 28.81        (1.973%)
+mu              = 49.4878          +/- 0.6995       (1.414%)
+sigma           = 21.3152          +/- 0.6005       (2.817%)
+
+correlation matrix of the fit parameters:
+                a      mu     sigma  
+a               1.000 
+mu              0.001  1.000 
+sigma          -0.626 -0.001  1.000 
