@@ -54,7 +54,7 @@ CONTAINS
       print*, 'created directory ',trim(fileplace)
 #endif
    end if
-   
+
    !get res dir
    resdir=trim(homedir)//'res/'
    

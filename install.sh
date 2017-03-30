@@ -26,10 +26,6 @@ cd src
 
 make clean && make 
 
-if [ "$NUM_CORES" = "0" ]; then #just make code
-    exit 0
-fi
-
 cd ..
 if [ ! -d "build" ]; then
    mkdir "build"
@@ -55,6 +51,10 @@ for i in *; do
    fi
 done
 
+
+if [ "$NUM_CORES" = "0" ]; then #just make code
+    exit 0
+fi
 
 mv mcgrid "$bdirc" && echo " "&& echo "*****Install complete*****" && echo " "
 

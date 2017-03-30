@@ -60,10 +60,12 @@ CONTAINS
          
         if(celli == -1 .or. cellj == -1 .or. cellk == -1)then
             if(celli == -1 .or. cellj == -1)then
-               call repeat_bounds(celli, cellj, xcur, ycur, xmax, ymax, nxg, nyg, delta)
-               if(celli == -1 .or. cellj == -1 .or. tflag)then
-                  print*,'error',celli,cellj,tflag
-               end if
+                tflag = .true.
+                exit
+               ! call repeat_bounds(celli, cellj, xcur, ycur, xmax, ymax, nxg, nyg, delta)
+               ! if(celli == -1 .or. cellj == -1 .or. tflag)then
+               !    print*,'error',celli,cellj,tflag
+               ! end if
             elseif(cellk == -1)then
                 if(zcur >= 2.*zmax-delta)then
                     zcur = 2.*zmax - delta
@@ -472,13 +474,13 @@ CONTAINS
         ! nxp = v(1)
         ! nyp = v(2)
         ! nzp = v(3)
-
+        xim = yp*cospim - xp*sinpim
+        yim = zp*sintim - yp*costim*sinpim - xp*costim*cospim
         call taufind1(xmax,ymax,zmax,xcell,ycell,zcell,delta,tau1)
 
         cosa = nxp*v(1) + nyp*v(2) + nzp*v(3)!angle of peeled off photon
 
-        xim = yp*cospim - xp*sinpim
-        yim = zp*sintim - yp*costim*sinpim - xp*costim*cospim
+
 
         prob = exp(-tau1)
 

@@ -85,10 +85,10 @@ CONTAINS
       print'(A,F9.5,A,F9.5)',' taueq1 = ',taueq1,'  taupole1 = ',taupole1
     end if
 
-    inquire(iolength=i)rhokap
-    open(newunit=u, file='rhokap.dat', access='direct', status='REPLACE',form='unformatted', &
-     recl=i)
-     write(u,rec=1) rhokap
-     close(u)
+    ! inquire(iolength=i)rhokap
+    ! open(newunit=u, file='rhokap.dat', access='direct', status='REPLACE',form='unformatted', &
+    !  recl=i)
+    !  write(u,rec=1) rhokap
+    !  close(u)
     end subroutine gridset
 end MODULE gridset_mod
