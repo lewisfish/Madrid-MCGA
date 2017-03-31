@@ -4,14 +4,14 @@ import numpy as np
 # import matplotlib.pylab as plt
 # from scipy.optimize import curve_fit
 
-f = open('image.dat', 'r')
+f = open('image_small.dat', 'r')
 im = np.genfromtxt('image.dat')
 
 f.close()
 
 f = open('test.dat', 'w')
 for i in range(len(im[100, :])):
-    f.write(str(im[100, i]) + '\n')
+    f.write(str(im[100, i]/max(im[100, :])) + '\n')
 f.close()
 # def gauss(x, *p):
 #     A, mu, sigma = p
