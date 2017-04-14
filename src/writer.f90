@@ -11,7 +11,7 @@ CONTAINS
 
         implicit none
 
-        integer           :: nphotons, i, u, numproc, j
+        integer           :: nphotons, i, u, numproc, j, k
         real              :: xmax, ymax, zmax, depth
         character(len=10) :: fn
 
@@ -27,12 +27,15 @@ CONTAINS
         write(u,rec=1) jmeanGLOBAL
         close(u)
 
+        do k = 0, 3
+            write(fn,'(I1)') k
 
-        open(newunit=u,file=trim(fileplace)//'im/image_small.dat',status='REPLACE')
+            open(newunit=u,file=trim(fileplace)//'im/image_'//trim(fn)//'.dat',status='REPLACE')
 
-        do i = -((Nbins-1)/2), ((Nbins-1)/2)
-            write(u,*) (imageGLOBAL(j,i,1),j = ((Nbins-1)/2), -((Nbins-1)/2),-1)
+            do i = -((Nbins-1)/2), ((Nbins-1)/2)
+                write(u,*) (imageGLOBAL(j,i,k+1),j = ((Nbins-1)/2), -((Nbins-1)/2),-1)
+            end do
+            close(u)
         end do
-        close(u)
     end subroutine writer
 end MODULE writer_mod

@@ -431,7 +431,7 @@ CONTAINS
         use iarray,      only : image
         use constants,   only : PI, nbins
         use photon_vars, only : xp, yp, zp, nxp, nyp, nzp
-        use opt_prop,    only : hgg, g2
+        use opt_prop,    only : hgg, g2, material, wavelength
 
         implicit none
 
@@ -494,7 +494,7 @@ CONTAINS
 
         prob = prob * hgfact
 
-        image(binx, biny,1) = image(binx, biny,1) + prob
+        image(binx, biny,material + wavelength) = image(binx, biny, material + wavelength) + prob
 
         nxp = nxpold
         nyp = nypold

@@ -73,7 +73,7 @@ end if
 ! do i = 1, 10
 ! call zarray()
 depth = zmax - .5!real(i)/10.
-print*,depth
+if(id == 1)print*,depth
 !***** Set up density grid *******************************************
 call gridset(xmax,ymax,zmax,id,depth)
 
@@ -107,7 +107,8 @@ do j=1,nphotons
 !****** Find scattering location
 
       call tauint1(xmax,ymax,zmax,xcell,ycell,zcell,tflag,iseed,delta)
-    if(wavelength == 1)then
+    if(wavelength /= 0)then
+        print*,wavelength,material
         call peeling(xmax,ymax,zmax,xcell,ycell,zcell,delta)
     end if
 !******** Photon scatters in grid until it exits (tflag=TRUE) 
@@ -135,7 +136,7 @@ do j=1,nphotons
 !************ Find next scattering location
         call tauint1(xmax,ymax,zmax,xcell,ycell,zcell,tflag,iseed,delta)
 
-        if(wavelength == 1 .and. .not. tflag)then
+        if(wavelength /= 0 .and. .not. tflag)then
             call peeling(xmax,ymax,zmax,xcell,ycell,zcell,delta)
         end if
    end do
