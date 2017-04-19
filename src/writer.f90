@@ -4,38 +4,32 @@ implicit none
 save
 
 CONTAINS
-    subroutine writer(xmax,ymax,zmax,nphotons, numproc, depth)
+    subroutine writer(depth)
 
-        use constants, only : nxg, nyg, nzg, fileplace, nbins
-        use iarray,    only : jmeanGLOBAL, imageGLOBAL
+        use constants, only : fileplace, nbins
+        use iarray,    only : imageGLOBAL
 
         implicit none
 
-        integer           :: nphotons, i, u, numproc, j, k
-        real              :: xmax, ymax, zmax, depth
+        integer           :: i, u, j
+        real              :: depth
         character(len=10) :: fn
 
 
-        !maybe not right
-        jmeanGLOBAL =jmeanGLOBAL * ((2.*xmax)**2./(nphotons*numproc*(2.*xmax/nxg)*(2.*ymax/nyg)*(2.*zmax/nzg)))
+        write(fn,'(F4.2)') depth
 
 
-        inquire(iolength=i)jmeanGLOBAL
-        write(fn,'(F6.3)') depth
-        open(newunit=u,file=trim(fileplace)//'jmean/jmean-small.dat',access='direct',status='REPLACE',form='unformatted',&
-        recl=i)
-        write(u,rec=1) jmeanGLOBAL
+        open(newunit=u,file=trim(fileplace)//'im/im-1064-'//trim(fn)//'.dat',status='replace')
+        do i = -((Nbins-1)/2), ((Nbins-1)/2)
+            write(u,*) imageGLOBAL(0,i,2)+imageGLOBAL(0,i,4)!,j = ((Nbins-1)/2), -((Nbins-1)/2),-1)
+        end do
         close(u)
 
-        do k = 0, 3
-            write(fn,'(I1)') k
-
-            open(newunit=u,file=trim(fileplace)//'im/image_'//trim(fn)//'.dat',status='REPLACE')
-
-            do i = -((Nbins-1)/2), ((Nbins-1)/2)
-                write(u,*) (imageGLOBAL(j,i,k+1),j = ((Nbins-1)/2), -((Nbins-1)/2),-1)
-            end do
-            close(u)
+        open(newunit=u,file=trim(fileplace)//'im/im-809-'//trim(fn)//'.dat',status='replace')
+        do i = -((Nbins-1)/2), ((Nbins-1)/2)
+            write(u,*) (imageGLOBAL(j,i,1)+imageGLOBAL(j,i,3),j = ((Nbins-1)/2), -((Nbins-1)/2),-1)
         end do
+        close(u)
+
     end subroutine writer
 end MODULE writer_mod

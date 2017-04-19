@@ -13,7 +13,7 @@ CONTAINS
    implicit none
 
    hgg = 0.9
-   g2  = hgg**2.
+   g2  = hgg**2
    mua = .1
    mus = 174.5!. / (1. - hgg)
 
@@ -31,7 +31,7 @@ CONTAINS
    implicit none
 
    hgg = 0.9
-   g2  = hgg**2.
+   g2  = hgg**2
    mua = .15
    mus = 180.65 !/ (1. - hgg)
 
@@ -49,7 +49,7 @@ CONTAINS
    implicit none
 
    hgg = 0.9
-   g2  = hgg**2.
+   g2  = hgg**2
    mua = .13
    mus = 9.49 / (1. - hgg) !from s.jacques paper formula using jacques 1996 data
 
@@ -67,7 +67,7 @@ CONTAINS
    implicit none
 
    hgg = 0.7
-   g2  = hgg**2.
+   g2  = hgg**2
    mua = .23
    mus = 21. / (1. - hgg)
 

@@ -68,13 +68,11 @@ CONTAINS
    implicit none
    
    
-   jmean = 0.
    xface = 0.
    yface = 0.
    zface = 0.
    rhokap = 0.
    albedo_a = 0.
-   jmeanGLOBAL = 0.
    refrac = 1.
    image = 0.
    imageGLOBAL = 0.
@@ -92,7 +90,6 @@ CONTAINS
    
     allocate(xface(nxg+1), yface(nyg+1), zface(nzg+1))
     allocate(rhokap(nxg,nyg,nzg,4), albedo_a(nxg,nyg,nzg,4))
-    allocate(jmean(nxg,nyg,nzg,4), jmeanGLOBAL(nxg,nyg,nzg,4))
     allocate(refrac(nxg,nyg,nzg))
     allocate(image(-((Nbins-1)/2):((Nbins-1)/2), -((Nbins-1)/2):((Nbins-1)/2), 4), &
              imageGLOBAL(-((Nbins-1)/2):((Nbins-1)/2), -((Nbins-1)/2):((Nbins-1)/2),4))

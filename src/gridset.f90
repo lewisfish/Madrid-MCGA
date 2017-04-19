@@ -3,10 +3,13 @@ MODULE gridset_mod
 implicit none
 save
 
-CONTAINS
-    subroutine gridset(xmax,ymax,zmax,id, depth)
+private
+public :: gridset
 
-    use constants, only : nxg,nyg,nzg
+CONTAINS
+    subroutine gridset(id, depth)
+
+    use constants, only : nxg, nyg, nzg, xmax, ymax, zmax
     use iarray, only    : rhokap,xface,yface,zface, rhokap,albedo_a, refrac
     use opt_prop, only  : kappa, albedo
     use ch_opt
@@ -14,7 +17,7 @@ CONTAINS
     implicit none
 
     integer, intent(IN) :: id
-    real,    intent(IN) :: xmax, ymax, zmax, depth
+    real,    intent(IN) :: depth
 
     integer             :: i, j, k, u
     real                :: x, y, z, taueq1, taupole1, taueq2, taupole2
@@ -45,7 +48,7 @@ CONTAINS
             do k = 1, nzg
                 z = zface(k) - zmax + zmax/nzg
 !***********Call density setup subroutine 
-                    if(x >= -.52 .and. x <= 0.52 .and. y >= -0.335 .and. y <= .335 .and. z <= depth)then
+                    if(x >= -.3 .and. x <= 0.3 .and. y >= -0.5 .and. y <= .5 .and. z <= depth)then
                         refrac(i,j,k)=1.38
                         albedo_a(i,j,k,3) = 0.001                   !809nm crystal
                         rhokap(i,j,k,3)   = 6.
@@ -85,10 +88,12 @@ CONTAINS
       print'(A,F9.5,A,F9.5)',' taueq1 = ',taueq1,'  taupole1 = ',taupole1
     end if
 
-    ! inquire(iolength=i)rhokap
-    ! open(newunit=u, file='rhokap.dat', access='direct', status='REPLACE',form='unformatted', &
-    !  recl=i)
-    !  write(u,rec=1) rhokap
-    !  close(u)
+    inquire(iolength=i)rhokap(:,:,:,3)
+    open(newunit=u, file='rhokap.dat', access='direct', status='REPLACE',form='unformatted', &
+     recl=i)
+     write(u,rec=1) rhokap(:,:,:,3)
+     close(u)
+
+     call exit(0)
     end subroutine gridset
 end MODULE gridset_mod

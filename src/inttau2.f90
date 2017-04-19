@@ -4,19 +4,19 @@ module inttau2
    
 CONTAINS
 
-    subroutine tauint1(xmax,ymax,zmax,xcell,ycell,zcell,tflag,iseed,delta)
+    subroutine tauint1(xcell,ycell,zcell,tflag,iseed,delta)
     !optical depth integration subroutine
     !
     !
-        use constants,   only : nxg, nyg, nzg
+        use constants,   only : nxg, nyg, nzg, xmax, ymax, zmax
         use photon_vars, only : xp, yp, zp, nxp, nyp, nzp, cost, sint, cosp, sinp, phi
-        use iarray,      only : jmean,rhokap!, xface, yface, zface!, rhokap
+        use iarray,      only : rhokap
         use opt_prop,    only : wavelength, material
 
    
         implicit none
 
-        real,    intent(IN)    :: xmax, ymax, zmax, delta
+        real,    intent(IN)    :: delta
         integer, intent(INOUT) :: xcell, ycell, zcell, iseed
         logical, intent(INOUT) :: tflag
 
@@ -46,14 +46,12 @@ CONTAINS
             if(taurun + taucell < tau)then
                 taurun = taurun + taucell
                 d = d + dcell
-                jmean(celli, cellj, cellk,wavelength+material) = jmean(celli, cellj, cellk,wavelength+material) + dcell
                 call update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, .TRUE., dir, delta)
 
             else
 
                 dcell = (tau - taurun) / rhokap(celli,cellj,cellk,wavelength+material)
                 d = d + dcell
-                jmean(celli, cellj, cellk,wavelength+material) = jmean(celli, cellj, cellk,wavelength+material) + dcell
                 call update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, .FALSE., dir, delta)
                 exit
             end if
@@ -138,7 +136,7 @@ CONTAINS
         end if
 
         wall_dist = min(dx, dy, dz)
-        if(wall_dist < 0.)print'(A,7F9.5)','dcell < 0.0 warning! ',wall_dist,dx,dy,dz,nxp,nyp,nzp
+        ! if(wall_dist < 0.)print'(A,7F9.5)','dcell < 0.0 warning! ',wall_dist,dx,dy,dz,nxp,nyp,nzp
         if(wall_dist == dx)dir=(/.TRUE., .FALSE., .FALSE./)
         if(wall_dist == dy)dir=(/.FALSE., .TRUE., .FALSE./)
         if(wall_dist == dz)dir=(/.FALSE., .FALSE., .TRUE./)
@@ -147,7 +145,7 @@ CONTAINS
    end function wall_dist
 
 
-    subroutine update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, wall_flag, dir, delta)
+    subroutine update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, wall_flag, dir, delta, peelflag)
     !routine that upates postions of photon and calls fresnel routines if photon leaves current voxel
     !
     !
@@ -161,6 +159,7 @@ CONTAINS
       real,    intent(IN)    :: dcell, delta
       integer, intent(INOUT) :: celli, cellj, cellk
       logical, intent(IN)    :: wall_flag, dir(:)   
+      logical, optional, intent(IN) :: peelflag
       
       real :: n1
 
@@ -209,12 +208,21 @@ CONTAINS
          zcur = zcur + nzp*dcell
       
       end if
-     if(n1 == 1.38)then
-        material = 3
-     else
-        material = 1
-     end if
-
+     if(present(peelflag))then
+        if(.not.peelflag)then
+            if(n1 == 1.38)then
+            material = 3
+            else
+            material = 1
+            end if
+        end if
+    else
+        if(n1 == 1.38)then
+            material = 3
+            else
+            material = 1
+        end if
+    end if
 
       if(wall_flag)then
          call update_voxels(xcur, ycur, zcur, celli, cellj, cellk)
@@ -227,7 +235,8 @@ CONTAINS
     !updates the current voxel based upon position
     !
     !
-        use iarray, only : xface, yface, zface
+        use iarray,    only : xface, yface, zface
+        use constants, only : nxg, nyg, nzg, xmax, ymax, zmax
 
         implicit none
 
@@ -249,34 +258,29 @@ CONTAINS
 
         real, intent(IN) :: val, a(:)
         integer          :: n, lo, mid, hi
-        logical          :: ascnd
 
         n = size(a)
-        ascnd = (a(n) >= a(1))
         lo = 0
-        hi = n+1
-        do
-            if (hi-lo <= 1) exit
-            mid = (hi+lo)/2
-            if (ascnd .eqv. (val >= a(mid))) then
-                lo = mid
-            else
-                hi = mid
-            end if
-        end do
+        hi = n + 1
 
         if (val == a(1)) then
             find = 1
         else if (val == a(n)) then
             find = n-1
-        else if(ascnd.and. (val > a(n) .or. val < a(1))) then
-            find = -1
-        else if(.not.ascnd.and. (val < a(n) .or. val > a(1))) then
+        else if((val > a(n)) .or. (val < a(1))) then
             find = -1
         else
+            do
+                if (hi-lo <= 1) exit
+                mid = (hi+lo)/2
+                if (val >= a(mid)) then
+                    lo = mid
+                else
+                    hi = mid
+                end if
+            end do
             find = lo
         end if
-
     end function find
 
 
@@ -367,8 +371,8 @@ CONTAINS
         else
             sint2 = (n1/n2)*sintt
             cost2 = sqrt(1. - sint2 * sint2)
-            f1 = abs((n1*costt - n2*cost2) / (n1*costt + n2*cost2))**2.
-            f2 = abs((n1*cost2 - n2*costt) / (n1*cost2 + n2*costt))**2.
+            f1 = abs((n1*costt - n2*cost2) / (n1*costt + n2*cost2))**2
+            f2 = abs((n1*cost2 - n2*costt) / (n1*cost2 + n2*costt))**2
 
             tir = 0.5 * (f1 + f2)
         if(isnan(tir) .or. tir > 1. .or. tir < 0.)print*,'TIR: ', tir!, f1, f2, cost,sint,cost,sint2
@@ -378,18 +382,18 @@ CONTAINS
     end function fresnel
 
 
-    subroutine taufind1(xmax,ymax,zmax,xcell,ycell,zcell,delta,taurun)
+    subroutine taufind1(xcell,ycell,zcell,delta,taurun)
     !routine to find tau from current position to edge of grid in a direction (nxp,nyp,nzp)
     !
     !
         use photon_vars, only : xp, yp, zp
         use iarray,      only : rhokap
         use opt_prop,    only : wavelength, material
+        use constants,   only : xmax, ymax, zmax 
      
-  
         implicit none
 
-        real,    intent(IN)    :: xmax, ymax, zmax, delta
+        real,    intent(IN)    :: delta
         integer, intent(INOUT) :: xcell, ycell, zcell
 
         real                   :: taurun, taucell, xcur, ycur, zcur, d, dcell
@@ -418,7 +422,7 @@ CONTAINS
 
             taurun = taurun + taucell
             d = d + dcell
-            call update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, .TRUE., dir, delta)
+            call update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, .TRUE., dir, delta, .TRUE.)
 
             if(celli == -1 .or. cellj == -1 .or. cellk == -1)then
                 exit
@@ -426,17 +430,18 @@ CONTAINS
         end do
     end subroutine taufind1
    
-    subroutine peeling(xmax,ymax,zmax,xcell,ycell,zcell,delta)
+
+    subroutine peeling(xcell,ycell,zcell,delta)
    
         use iarray,      only : image
-        use constants,   only : PI, nbins
+        use constants,   only : PI, nbins, xmax, ymax, zmax
         use photon_vars, only : xp, yp, zp, nxp, nyp, nzp
         use opt_prop,    only : hgg, g2, material, wavelength
 
         implicit none
 
 
-        real,    intent(IN)    :: xmax, ymax, zmax, delta
+        real,    intent(IN)    :: delta
         integer, intent(INOUT) :: xcell, ycell, zcell
         real                   :: cosa, tau1, prob, xim, yim, bin_wid, phiim, thetaim,v(3),xpold,ypold
         real                   :: sintim, sinpim, costim, cospim, nxpold, nypold, nzpold, hgfact,zpold
@@ -449,9 +454,9 @@ CONTAINS
 
         !image postion vector
         !angle for vector
-        sintim = sin(thetaim)
-        sinpim = sin(phiim)
         costim = cos(thetaim)
+        sintim = 1. - costim*costim
+        sinpim = sin(phiim)
         cospim = cos(phiim)
 
         !vector
@@ -476,7 +481,7 @@ CONTAINS
         nzp = v(3)
         xim = yp*cospim - xp*sinpim
         yim = zp*sintim - yp*costim*sinpim - xp*costim*cospim
-        call taufind1(xmax,ymax,zmax,xcell,ycell,zcell,delta,tau1)
+        call taufind1(xcell,ycell,zcell,delta,tau1)
 
 
         cosa = nxp*v(1) + nyp*v(2) + nzp*v(3)!angle of peeled off photon
@@ -485,7 +490,7 @@ CONTAINS
 
         prob = exp(-tau1)
 
-        bin_wid = 4. * xmax/Nbins
+        bin_wid = 4.*xmax/Nbins
 
         binx = floor(xim/bin_wid)
         biny = floor(yim/bin_wid)
@@ -493,7 +498,7 @@ CONTAINS
         hgfact=(1.-g2)/(4.*pi*(1.+g2-2.*hgg*cosa)**(1.5))
 
         prob = prob * hgfact
-
+        ! if(material==3)print*,material+wavelength
         image(binx, biny,material + wavelength) = image(binx, biny, material + wavelength) + prob
 
         nxp = nxpold

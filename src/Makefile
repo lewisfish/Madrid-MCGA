@@ -1,5 +1,5 @@
 FCOMP = mpifort
-FCFLAGS = -O3 -cpp -freal-4-real-8
+FCFLAGS = -Ofast -cpp -freal-4-real-8
 #FCFLAGS = -O2 -freal-4-real-8 -g -fcheck=all -fbounds-check -fbacktrace 
 #-ffpe-trap=zero,overflow,underflow 
 #FCFLAGS = -Wall -Wextra -pedantic
@@ -21,14 +21,15 @@ SRCS =      ran2.f \
             stokes.f90 \
             sourceph.f90 \
             writer.f90 \
-            mcpolar.f90 
+            mcpolar.f90 \
+            main.f90
             
 OBJECTS = $(SRCS:.f90=.o)
 
 all:	$(PROGRAM)
 
 $(PROGRAM):	$(OBJECTS)
-	$(FCOMP) $(FCFLAGS) -o $@ $^ 
+	$(FCOMP) $(FCFLAGS) -o $@ $^
 	
 %.o:  %.f90
 	$(FCOMP)  $(FCFLAGS) -c $<

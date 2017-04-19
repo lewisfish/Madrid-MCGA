@@ -4,9 +4,9 @@ implicit none
 save
 
 CONTAINS
-   subroutine sourceph(xmax,ymax,zmax,xcell,ycell,zcell,iseed, j)
+   subroutine sourceph(xcell,ycell,zcell,iseed, j)
 
-   use constants, only : nxg,nyg,nzg,pi,twopi
+   use constants, only : nxg,nyg,nzg,pi,twopi,xmax,ymax,zmax
    use photon_vars
 
    implicit none
@@ -15,7 +15,6 @@ CONTAINS
    integer, intent(OUT)   :: xcell, ycell, zcell
    integer, intent(INOUT) :: iseed
    integer, intent(IN)    :: j
-   real,    intent(IN)    :: xmax, ymax, zmax
    real                   :: ran2
 
 
