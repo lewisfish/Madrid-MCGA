@@ -487,7 +487,7 @@ CONTAINS
         cosa = nxp*v(1) + nyp*v(2) + nzp*v(3)!angle of peeled off photon
 
 
-
+!over 4 pi for 1st fluro photon
         prob = exp(-tau1)
 
         bin_wid = 4.*xmax/Nbins
