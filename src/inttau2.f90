@@ -2,6 +2,9 @@ module inttau2
 
    implicit none
    
+   private
+   public :: tauint1, peeling
+
 CONTAINS
 
     subroutine tauint1(xcell,ycell,zcell,tflag,iseed,delta)
@@ -12,7 +15,7 @@ CONTAINS
         use photon_vars, only : xp, yp, zp, nxp, nyp, nzp, cost, sint, cosp, sinp, phi
         use iarray,      only : rhokap
         use opt_prop,    only : wavelength, material
-
+        use vector_class
    
         implicit none
 
@@ -20,6 +23,7 @@ CONTAINS
         integer, intent(INOUT) :: xcell, ycell, zcell, iseed
         logical, intent(INOUT) :: tflag
 
+        type(vector)           :: incd, norm
         real                   :: tau, taurun, taucell, xcur, ycur, zcur, d, dcell, ran2
         integer                :: celli, cellj, cellk
         logical                :: dir(3), rflag
@@ -67,7 +71,11 @@ CONTAINS
                         zcur = 2.*zmax - delta
                         cellk = nzg
                         rflag = .false.
-                        call reflect(zcur, zmax, nzp, cost, sint, 1.38, 1.0, iseed, delta, rflag)
+                        incd = vector(nxp, nyp, nzp)
+                        incd = incd%magnitude()
+                        norm = vector(0.,0.,1.)
+                        call reflect(incd, norm)
+                        ! call reflect(zcur, zmax, nzp, cost, sint, 1.38, 1.0, iseed, delta, rflag)
                         if(rflag)then
                             phi = atan2(sinp, cosp)
                             nxp = sint * cosp
@@ -324,32 +332,71 @@ CONTAINS
     end subroutine repeat_bounds
    
 
-    subroutine reflect(pcur, pmax, pdir, pdir_c, pdir_s, n1, n2, iseed, delta, rflag)
-    !carries out fresnel reflection
-    !
-    !
+    ! subroutine reflect(pcur, pmax, pdir, pdir_c, pdir_s, n1, n2, iseed, delta, rflag)
+    ! !carries out fresnel reflection
+    ! !
+    ! !
+    !     implicit none
+
+    !     real,    intent(IN)    :: n1, n2, pcur, delta, pdir, pmax
+    !     real,    intent(INOUT) :: pdir_c, pdir_s
+    !     integer, intent(INOUT) :: iseed
+    !     logical, intent(INOUT) :: rflag
+    !     real                   :: ran2, tmp
+
+    !     rflag = .false.
+    !     tmp = pdir_s
+    !     if(ran2(iseed) <= fresnel(pdir, n1, n2))then
+    !         rflag = .true.
+    !         pdir_c = -pdir_c
+    !         pdir_s = (1. - pdir_c*pdir_c)
+    !         if(pdir_s < 0.)then
+    !             pdir_s = 0.
+    !         else
+    !             pdir_s = sign(sqrt(pdir_s), tmp)
+    !         end if 
+    !     end if
+    ! end subroutine reflect
+
+
+    subroutine reflect(I, N)
+
+        use vector_class
+
         implicit none
 
-        real,    intent(IN)    :: n1, n2, pcur, delta, pdir, pmax
-        real,    intent(INOUT) :: pdir_c, pdir_s
-        integer, intent(INOUT) :: iseed
-        logical, intent(INOUT) :: rflag
-        real                   :: ran2, tmp
+        type(vector), intent(INOUT) :: I
+        type(vector), intent(IN)    :: N
 
-        rflag = .false.
-        tmp = pdir_s
-        if(ran2(iseed) <= fresnel(pdir, n1, n2))then
-            rflag = .true.
-            pdir_c = -pdir_c
-            pdir_s = (1. - pdir_c*pdir_c)
-            if(pdir_s < 0.)then
-                pdir_s = 0.
-            else
-                pdir_s = sign(sqrt(pdir_s), tmp)
-            end if 
-        end if
+        type(vector) :: R
+
+        R = I - 2. * (N .dot. I) * N
+        I = R
+
     end subroutine reflect
-   
+
+
+    subroutine refract(I, N, eta)
+        
+        use vector_class
+
+        implicit none
+
+        type(vector), intent(INOUT) :: I
+        type(vector), intent(IN)    :: N
+        real,         intent(IN)    :: eta
+
+        type(vector) :: T
+
+        real :: c1, c2
+
+        c1 = N .dot. I ! or cos(theta_1)
+        c2 = sqrt(1. - (eta)**2 * (1.-c1**2))
+
+        T = eta + (eta * c1 - c2) * N 
+
+    end subroutine refract
+
    
     function fresnel(pdir, n1, n2) result (tir)
     !calculates the fresnel coefficents
@@ -415,7 +462,6 @@ CONTAINS
         dcell = 0.
 
         dir = (/.FALSE., .FALSE., .FALSE./)
-
         do
             dcell = wall_dist(celli, cellj, cellk, xcur, ycur, zcur, dir)
             taucell = dcell * rhokap(celli,cellj,cellk, wavelength+material)
@@ -434,35 +480,19 @@ CONTAINS
     subroutine peeling(xcell,ycell,zcell,delta)
    
         use iarray,      only : image
-        use constants,   only : PI, nbins, xmax, ymax, zmax
+        use constants,   only : PI, nbins, xmax, ymax, zmax, v, costim, sintim, cospim, sinpim
         use photon_vars, only : xp, yp, zp, nxp, nyp, nzp
         use opt_prop,    only : hgg, g2, material, wavelength
+        use taufind2
 
         implicit none
 
 
         real,    intent(IN)    :: delta
         integer, intent(INOUT) :: xcell, ycell, zcell
-        real                   :: cosa, tau1, prob, xim, yim, bin_wid, phiim, thetaim,v(3),xpold,ypold
-        real                   :: sintim, sinpim, costim, cospim, nxpold, nypold, nzpold, hgfact,zpold
+        real                   :: cosa, tau1, prob, xim, yim, bin_wid,xpold,ypold
+        real                   :: nxpold, nypold, nzpold, hgfact,zpold, tau3
         integer                :: binx, biny, xcellold, ycellold, zcellold
-
-
-        ! postion image in degrees
-        phiim   = 0. * pi/180.
-        thetaim = 0. * pi/180.
-
-        !image postion vector
-        !angle for vector
-        costim = cos(thetaim)
-        sintim = 1. - costim*costim
-        sinpim = sin(phiim)
-        cospim = cos(phiim)
-
-        !vector
-        v(1) = sintim * cospim     
-        v(2) = sintim * sinpim
-        v(3) = costim  
 
         nxpold = nxp
         nypold = nyp
@@ -475,19 +505,19 @@ CONTAINS
         xpold = xp
         ypold = yp
         zpold = zp
+        cosa = nxp*v(1) + nyp*v(2) + nzp*v(3)!angle of peeled off photon
 
         nxp = v(1)
         nyp = v(2)
         nzp = v(3)
         xim = yp*cospim - xp*sinpim
         yim = zp*sintim - yp*costim*sinpim - xp*costim*cospim
-        call taufind1(xcell,ycell,zcell,delta,tau1)
+
+        ! call taufind1(xcell,ycell,zcell,delta,tau3)
+        call tau2(xcell,ycell,zcell,delta,tau3)
 
 
-        cosa = nxp*v(1) + nyp*v(2) + nzp*v(3)!angle of peeled off photon
-
-
-!over 4 pi for 1st fluro photon
+        !over 4 pi for 1st fluro photon
         prob = exp(-tau1)
 
         bin_wid = 4.*xmax/Nbins
@@ -497,7 +527,9 @@ CONTAINS
 
         hgfact=(1.-g2)/(4.*pi*(1.+g2-2.*hgg*cosa)**(1.5))
 
-        prob = prob * hgfact
+        prob = exp(-tau3) * hgfact
+        ! print*,hgfact,prob
+
         ! if(material==3)print*,material+wavelength
         image(binx, biny,material + wavelength) = image(binx, biny, material + wavelength) + prob
 

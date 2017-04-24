@@ -17,6 +17,8 @@ SRCS =      ran2.f \
             ch_opt.f90 \
             density.f90 \
             gridset.f90 \
+            taufind2.f90 \
+            vector_class.f90 \
             inttau2.f90 \
             stokes.f90 \
             sourceph.f90 \

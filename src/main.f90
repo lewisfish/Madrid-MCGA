@@ -21,10 +21,10 @@ program main
     call directory
     call alloc_array
 
-    depth = 0.5
+    depth = 0.5 !depth = zmax
     do i = 1, 1
         call mcpolar(depth, id, numproc)
-        depth = depth + 0.05
+        depth = depth - 0.1
     end do
 
     call mpi_finalize(error)

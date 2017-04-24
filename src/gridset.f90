@@ -48,7 +48,7 @@ CONTAINS
             do k = 1, nzg
                 z = zface(k) - zmax + zmax/nzg
 !***********Call density setup subroutine 
-                    if(x >= -.3 .and. x <= 0.3 .and. y >= -0.5 .and. y <= .5 .and. z <= depth)then
+                    if(x >= -.3 .and. x <= 0.3 .and. y >= -0.5 .and. y <= .5 .and. z >= -zmax .and. z <= (-zmax+.3))then
                         refrac(i,j,k)=1.38
                         albedo_a(i,j,k,3) = 0.001                   !809nm crystal
                         rhokap(i,j,k,3)   = 6.
@@ -88,12 +88,11 @@ CONTAINS
       print'(A,F9.5,A,F9.5)',' taueq1 = ',taueq1,'  taupole1 = ',taupole1
     end if
 
-    inquire(iolength=i)rhokap(:,:,:,3)
-    open(newunit=u, file='rhokap.dat', access='direct', status='REPLACE',form='unformatted', &
-     recl=i)
-     write(u,rec=1) rhokap(:,:,:,3)
-     close(u)
+    ! inquire(iolength=i)rhokap(:,:,:,3)
+    ! open(newunit=u, file='rhokap.dat', access='direct', status='REPLACE',form='unformatted', &
+    !  recl=i)
+    !  write(u,rec=1) rhokap(:,:,:,3)
+    !  close(u)
 
-     call exit(0)
     end subroutine gridset
 end MODULE gridset_mod
