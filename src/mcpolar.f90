@@ -32,13 +32,27 @@ real,    intent(IN) :: depth
 integer           :: nphotons, iseed, j, xcell, ycell, zcell
 logical           :: tflag
 double precision  :: nscatt
-real              :: ran, delta
-real              :: start, finish, ran2
+real              :: ran, delta, ran2, phiim, thetaim
 
-
-integer           :: error, i
+integer           :: error
 
 call zarray
+
+
+phiim   = 0. * pi/180.
+thetaim = 0. * pi/180.
+
+!image postion vector
+!angle for vector
+costim = cos(thetaim)
+sintim = sin(thetaim)
+sinpim = sin(phiim)
+cospim = cos(phiim)
+
+!vector
+v(1) = sintim * cospim     
+v(2) = sintim * sinpim
+v(3) = costim  
 
 
 !**** Read in parameters from the file input.params
@@ -50,6 +64,8 @@ open(10,file=trim(resdir)//'input.params',status='old')
    read(10,*) n1
    read(10,*) n2
    close(10)
+
+   zmax = depth
 
 ! set seed for rnd generator. id to change seed for each process
 iseed=-456123456+id
@@ -121,7 +137,7 @@ do j=1,nphotons
 !************ Find next scattering location
         call tauint1(xcell,ycell,zcell,tflag,iseed,delta)
 
-        if(wavelength /= 0 .and. .not. tflag)then
+        if(wavelength /=0 .and. .not. tflag)then
             ! if(material==3)print*,material,tflag
             call peeling(xcell,ycell,zcell,delta)
         end if

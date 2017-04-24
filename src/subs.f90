@@ -76,6 +76,8 @@ CONTAINS
    refrac = 1.
    image = 0.
    imageGLOBAL = 0.
+   jmean = 0.
+   jmeanGLOBAL = 0.
    
    end SUBROUTINE zarray
 
@@ -93,7 +95,7 @@ CONTAINS
     allocate(refrac(nxg,nyg,nzg))
     allocate(image(-((Nbins-1)/2):((Nbins-1)/2), -((Nbins-1)/2):((Nbins-1)/2), 4), &
              imageGLOBAL(-((Nbins-1)/2):((Nbins-1)/2), -((Nbins-1)/2):((Nbins-1)/2),4))
-
+    allocate(jmean(nxg,nyg,nzg,4), jmeanGLOBAL(nxg,nyg,nzg,4))
 
 
    end SUBROUTINE alloc_array
