@@ -162,7 +162,7 @@ CONTAINS
         end if
 
         wall_dist = min(dx, dy, dz)
-        ! if(wall_dist < 0.)print'(A,7F9.5)','dcell < 0.0 warning! ',wall_dist,dx,dy,dz,nxp,nyp,nzp
+        if(wall_dist < 0.)print'(A,7F9.5)','dcell < 0.0 warning! ',wall_dist,dx,dy,dz,nxp,nyp,nzp
         if(wall_dist == dx)dir=(/.TRUE., .FALSE., .FALSE./)
         if(wall_dist == dy)dir=(/.FALSE., .TRUE., .FALSE./)
         if(wall_dist == dz)dir=(/.FALSE., .FALSE., .TRUE./)
@@ -209,17 +209,19 @@ CONTAINS
                xcur = xface(celli) - delta
             else
                print*,'Error in x dir in update_pos', dir, nxp, nyp, nzp
+               call exit(0)
             end if
             ycur = ycur + nyp*dcell 
             zcur = zcur + nzp*dcell
          elseif(dir(2))then
             xcur = xcur + nxp*dcell
             if(nyp > 0.)then
-               ycur = yface(cellj+1) + delta
+                ycur = yface(cellj+1) + delta
             elseif(nyp < 0.)then
-               ycur = yface(cellj) - delta
+                ycur = yface(cellj) - delta
             else
-               print*,'Error in y dir in update_pos', dir, nxp, nyp, nzp
+                print*,'Error in y dir in update_pos', dir, nxp, nyp, nzp
+                call exit(0)
             end if
             zcur = zcur + nzp*dcell
          elseif(dir(3))then
@@ -231,6 +233,7 @@ CONTAINS
                zcur = zface(cellk) - delta
             else
                print*,'Error in z dir in update_pos', dir, nxp, nyp, nzp
+               call exit(0)
             end if
          else
             print*,'Error in update_pos...',dir
@@ -274,27 +277,21 @@ CONTAINS
         if(n1 /= n2 .and. wall_flag)then
             incd = vector(nxp, nyp, nzp)
             incd = incd%magnitude()
-            if(iold /= celli)then     ! x-dir
+            if(iold /= celli)then                           ! x-dir
+
                 norm = vector(1., 0., 0.)
-                if(ran2(iseed) <= fresnel(incd, norm, n1, n2))then
-                    call reflect(incd, norm)
-                else
-                    call refract(incd, norm, n1/n2)
-                end if
-            elseif(jold /= cellj)then ! y-dir
+                call reflect_refract(incd, norm, n1, n2, iseed)
+
+            elseif(jold /= cellj)then                       ! y-dir
+
                 norm = vector(0., 1., 0.)
-                if(ran2(iseed) <= fresnel(incd, norm, n1, n2))then
-                    call reflect(incd, norm)
-                else
-                    call refract(incd, norm, n1/n2)
-                end if
-            elseif(kold /= cellk)then ! z-dir
+                call reflect_refract(incd, norm, n1, n2, iseed)
+
+            elseif(kold /= cellk)then                       ! z-dir
+
                 norm = vector(0., 0., 1.)
-                if(ran2(iseed) <= fresnel(incd, norm, n1, n2))then
-                    call reflect(incd, norm)
-                else
-                    call refract(incd, norm, n1/n2)
-                end if
+                call reflect_refract(incd, norm, n1, n2, iseed)
+
             else
                 print*,'Error in reflect/refract in update_pos!'
                 call exit(0)
@@ -435,6 +432,26 @@ CONTAINS
     !     end if
     ! end subroutine reflect
 
+    subroutine reflect_refract(I, N, n1, n2, iseed)
+
+        use vector_class
+
+        implicit none
+
+        type(vector), intent(INOUT) :: I
+        type(vector), intent(INOUT)  :: N
+        real,         intent(IN)    :: n1, n2
+        integer,      intent(INOUT) :: iseed
+
+        real :: ran2
+
+        if(ran2(iseed) <= fresnel(I, N, n1, n2))then
+            call reflect(I, N)
+        else
+            call refract(I, N, n1/n2)
+        end if
+    end subroutine reflect_refract
+
 
     subroutine reflect(I, N)
 
@@ -460,17 +477,25 @@ CONTAINS
         implicit none
 
         type(vector), intent(INOUT) :: I
-        type(vector), intent(IN)    :: N
+        type(vector), intent(INOUT) :: N
         real,         intent(IN)    :: eta
 
         type(vector) :: T
 
         real :: c1, c2
 
-        c1 = N .dot. I ! or cos(theta_1)
+        c1 = (N .dot. I) ! or cos(theta_1)
+        if(c1 < 0.)then
+            c1 = -c1
+        else
+            N = (-1.) * N
+        end if
         c2 = sqrt(1. - (eta)**2 * (1.-c1**2))
 
-        T = eta + (eta * c1 - c2) * N 
+        T = eta*I + (eta * c1 - c2) * N 
+        ! print*,I,T,eta
+        ! call exit(0)
+        I = T
 
     end subroutine refract
 
