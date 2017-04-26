@@ -38,7 +38,6 @@ integer           :: error
 
 call zarray
 
-
 phiim   = 0. * pi/180.
 thetaim = 0. * pi/180.
 
@@ -147,9 +146,9 @@ end do      ! end loop over nph photons
 call MPI_REDUCE(image,imageGLOBAL,size(image,1)*size(image,2)*size(image,3),MPI_DOUBLE_PRECISION,MPI_SUM,0,MPI_COMM_WORLD,error)
 call MPI_BARRIER(MPI_COMM_WORLD, error)
 
-
 call MPI_REDUCE(jmean, jmeanGLOBAL, nxg*nyg*nzg*4,MPI_DOUBLE_PRECISION,MPI_SUM,0,MPI_COMM_WORLD,error)
 call MPI_BARRIER(MPI_COMM_WORLD, error)
+
 
 if(id == 0)then
    call writer(nphotons,numproc,depth)

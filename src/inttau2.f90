@@ -11,11 +11,11 @@ CONTAINS
     !optical depth integration subroutine
     !
     !
-        use constants,   only : nxg, nyg, nzg, xmax, ymax, zmax
-        use photon_vars, only : xp, yp, zp, nxp, nyp, nzp, cost, sint, cosp, sinp, phi
-        use iarray,      only : rhokap, jmean
+        use constants,   only : xmax, ymax, zmax!,nxg, nyg, nzg, 
+        use photon_vars, only : xp, yp, zp!, nxp, nyp, nzp!, cost, sint, cosp, sinp, phi
+        use iarray,      only : jmean
 
-        use opt_prop,    only : wavelength, material, kappa
+        use opt_prop,    only : kappa
         use vector_class
    
         implicit none
@@ -24,10 +24,10 @@ CONTAINS
         integer, intent(INOUT) :: xcell, ycell, zcell, iseed
         logical, intent(INOUT) :: tflag
 
-        type(vector)           :: incd, norm
+        ! type(vector)           :: incd, norm
         real                   :: tau, taurun, taucell, xcur, ycur, zcur, d, dcell, ran2
         integer                :: celli, cellj, cellk
-        logical                :: dir(3), rflag
+        logical                :: dir(3)
 
         xcur = xp + xmax
         ycur = yp + ymax
@@ -53,7 +53,8 @@ CONTAINS
                 d = d + dcell
                 jmean(celli, cellj, cellk, 1) = jmean(celli, cellj, cellk, 1) + dcell
 
-                call update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, .TRUE., dir, delta)
+                call update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, .TRUE., dir, delta, tflag, iseed, &
+                                tau, taurun)
 
             else
 
@@ -61,58 +62,52 @@ CONTAINS
                 d = d + dcell
                 jmean(celli, cellj, cellk, 1) = jmean(celli, cellj, cellk, 1) + dcell
 
-                call update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, .FALSE., dir, delta)
+                call update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, .FALSE., dir, delta, tflag, iseed, &
+                                tau, taurun)
                 exit
             end if
          
             if(celli == -1 .or. cellj == -1 .or. cellk == -1)then
-                if(celli == -1 .or. cellk == -1)then
-                    call repeat_bounds(celli, cellk, xcur, zcur, xmax, zmax, nxg, nzg, delta)
-                    if(celli == -1 .or. cellk == -1 .or. tflag)then
-                       print*,'error',celli,cellj,tflag
-                    end if
-                elseif(cellj == -1)then
-                    if(ycur >= 2.*ymax-delta)then
-                        ycur = 2.*ymax
-                        cellj = nyg
-                        rflag = .false.
-                        incd = vector(nxp,nyp,nzp)
-                        norm = vector(0.,-1,0.)
-                        ! print*,incd
-                        incd = incd%magnitude()
-                        ! print*,incd
-                        ! call exit(0)
-                        if(ran2(iseed) <= fresnel(incd, norm ,1.38, 1.0))then
-                            call incd%print()
-                            call reflect(incd, norm)
-                            call incd%print()
+                tflag = .true.
+                exit
+                ! if(cellj == -1 .or. cellk == -1)then
+                !     call repeat_bounds(cellj, cellk, ycur, zcur, ymax, zmax, nyg, nzg, delta)
+                !     if(cellj == -1 .or. cellk == -1 .or. tflag)then
+                !        print*,'error',cellj,cellk,tflag
+                !     end if
+                ! elseif(celli == -1)then
+                !     if(xcur >= 2.*xmax-delta)then
+                !         xcur = 2.*xmax
+                !         celli = nxg
+                !         rflag = .false.
+                !         incd = vector(nxp,nyp,nzp)
+                !         norm = vector(-1.,0.,0.)
+                !         incd = incd%magnitude()
+                !         if(ran2(iseed) <= fresnel(incd, norm ,1.38, 1.0))then
+                !             call reflect(incd, norm)
 
-                            print*,
-                            nxp = incd%x
-                            nyp = incd%y
-                            nzp = incd%z
-                            phi = atan2(nyp, nzp)
-                            sinp = sin(phi)
-                            cosp = cos(phi)
-                            cost = nzp
-                            sint = 1.-cost*cost
-                        ! call reflect(zcur, zmax, nzp, cost, sint, 1.38, 1.0, iseed, delta, rflag)
-                        ! if(rflag)then
-                        !     phi = atan2(sinp, cosp)
-                        !     nxp = sint * cosp
-                        !     nyp = sint * sinp
-                        !     nzp = cost
-                            taurun = 0.
-                            tau = -log(ran2(iseed))
-                        else
-                            tflag = .true.
-                            exit
-                        end if
-                    else
-                        tflag = .true.
-                        exit
-                    end if
-                end if
+                !             nxp = incd%x
+                !             nyp = incd%y
+                !             nzp = incd%z
+
+                !             phi = atan2(nyp/sint, nxp/sint)
+                !             sinp = sin(phi)
+                !             cosp = cos(phi)
+
+                !             cost = nzp
+                !             sint = sqrt(1.-cost*cost)
+
+                !             taurun = 0.
+                !             tau = -log(ran2(iseed))
+                !         else
+                !             tflag = .true.
+                !             exit
+                !         end if
+                !     else
+                !         tflag = .true.
+                !         exit
+                !     end if
+                ! end if
             end if
 
         end do
@@ -176,23 +171,32 @@ CONTAINS
    end function wall_dist
 
 
-    subroutine update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, wall_flag, dir, delta, peelflag)
+    subroutine update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, wall_flag, dir, delta, tflag, iseed, &
+                          tau, taurun, peelflag)
     !routine that upates postions of photon and calls fresnel routines if photon leaves current voxel
     !
     !
-        use photon_vars, only : nxp, nyp, nzp
-        use opt_prop,    only : material
+        use photon_vars, only : nxp, nyp, nzp, phi, cost, sint, cosp, sinp
+        ! use opt_prop,    only : material
         use iarray,      only : xface, yface, zface, refrac
+        use vector_class
 
         implicit none
       
-      real,    intent(INOUT) :: xcur, ycur, zcur
+      real,    intent(INOUT) :: xcur, ycur, zcur, tau, taurun
       real,    intent(IN)    :: dcell, delta
-      integer, intent(INOUT) :: celli, cellj, cellk
-      logical, intent(IN)    :: wall_flag, dir(:)   
+      integer, intent(INOUT) :: celli, cellj, cellk, iseed
+      logical, intent(IN)    :: wall_flag, dir(:)
+      logical, intent(INOUT) :: tflag 
       logical, optional, intent(IN) :: peelflag
       
-      real :: n1
+      type(vector) :: norm, incd
+      real         :: n1, n2, ran2
+      integer      :: iold, jold, kold
+
+      iold = celli
+      jold = cellj
+      kold = cellk
 
       n1 = refrac(celli,cellj,cellk)
       
@@ -234,31 +238,82 @@ CONTAINS
          end if
       else
       
-         xcur = xcur + nxp*dcell
-         ycur = ycur + nyp*dcell 
-         zcur = zcur + nzp*dcell
+        xcur = xcur + nxp*dcell
+        ycur = ycur + nyp*dcell 
+        zcur = zcur + nzp*dcell
       
       end if
-     if(present(peelflag))then
-        if(.not.peelflag)then
-            if(n1 == 1.38)then
-            material = 3
-            else
-            material = 1
-            end if
-        end if
-    else
-        if(n1 == 1.38)then
-            material = 3
-            else
-            material = 1
-        end if
-    end if
+
+
+    !  if(present(peelflag))then
+    !     if(.not.peelflag)then
+    !         if(n1 == 1.38)then
+    !         material = 3
+    !         else
+    !         material = 1
+    !         end if
+    !     end if
+    ! else
+    !     if(n1 == 1.38)then
+    !         material = 3
+    !         else
+    !         material = 1
+    !     end if
+    ! end if
 
       if(wall_flag)then
          call update_voxels(xcur, ycur, zcur, celli, cellj, cellk)
+         if(celli == -1 .or. cellj == -1 .or. cellk == -1)then
+            tflag = .true.
+            return
+        end if
+        n2 = refrac(celli,cellj,cellk)
       end if
       
+
+        if(n1 /= n2 .and. wall_flag)then
+            incd = vector(nxp, nyp, nzp)
+            incd = incd%magnitude()
+            if(iold /= celli)then     ! x-dir
+                norm = vector(1., 0., 0.)
+                if(ran2(iseed) <= fresnel(incd, norm, n1, n2))then
+                    call reflect(incd, norm)
+                else
+                    call refract(incd, norm, n1/n2)
+                end if
+            elseif(jold /= cellj)then ! y-dir
+                norm = vector(0., 1., 0.)
+                if(ran2(iseed) <= fresnel(incd, norm, n1, n2))then
+                    call reflect(incd, norm)
+                else
+                    call refract(incd, norm, n1/n2)
+                end if
+            elseif(kold /= cellk)then ! z-dir
+                norm = vector(0., 0., 1.)
+                if(ran2(iseed) <= fresnel(incd, norm, n1, n2))then
+                    call reflect(incd, norm)
+                else
+                    call refract(incd, norm, n1/n2)
+                end if
+            else
+                print*,'Error in reflect/refract in update_pos!'
+                call exit(0)
+            end if
+                nxp = incd%x
+                nyp = incd%y
+                nzp = incd%z
+
+                phi = atan2(nyp/sint, nxp/sint)
+                sinp = sin(phi)
+                cosp = cos(phi)
+
+                cost = nzp
+                sint = sqrt(1.-cost*cost)
+
+                taurun = 0.
+                tau = -log(ran2(iseed))
+        end if
+
     end subroutine update_pos
 
 
@@ -267,7 +322,6 @@ CONTAINS
     !
     !
         use iarray,    only : xface, yface, zface
-        use constants, only : nxg, nyg, nzg, xmax, ymax, zmax
 
         implicit none
 
@@ -431,18 +485,14 @@ CONTAINS
 
         real, intent(IN)         :: n1, n2
         type(vector), intent(IN) :: I, N
-        real             :: crit, costt, sintt, sint2, cost2, tir, f1, f2
 
-        crit = n2/n1
+        real             ::  costt, sintt, sint2, cost2, tir, f1, f2
 
-        costt = N .dot. I
-        if(costt < 0.)then
-            print*,costt
-            call exit(0)
-        end if
+        costt = abs(I .dot. N)
+
         sintt = sqrt(1. - costt * costt)
-
-        if(sintt > crit)then
+        sint2 = n1/n2 * sintt
+        if(sint2 > 1.)then
             tir = 1.0
             return
         else
@@ -455,7 +505,6 @@ CONTAINS
         if(isnan(tir) .or. tir > 1. .or. tir < 0.)print*,'TIR: ', tir!, f1, f2, cost,sint,cost,sint2
             return
         end if
-   
     end function fresnel
 
    
@@ -535,9 +584,9 @@ CONTAINS
         real,    intent(IN)    :: delta
         integer, intent(INOUT) :: xcell, ycell, zcell
 
-        real                   :: taurun, taucell, xcur, ycur, zcur, d, dcell
-        integer                :: celli, cellj, cellk
-        logical                :: dir(3)
+        real                   :: taurun, taucell, xcur, ycur, zcur, d, dcell, tau
+        integer                :: celli, cellj, cellk, iseed
+        logical                :: dir(3),tmp
 
         xcur = xp + xmax
         ycur = yp + ymax
@@ -560,7 +609,8 @@ CONTAINS
 
             taurun = taurun + taucell
             d = d + dcell
-            call update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, .TRUE., dir, delta, .TRUE.)
+            call update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, .TRUE., dir, delta, tmp, iseed, &
+                            tau, taurun, .true.)
 
             if(celli == -1 .or. cellj == -1 .or. cellk == -1)then
                 exit

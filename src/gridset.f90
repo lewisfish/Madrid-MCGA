@@ -49,7 +49,12 @@ CONTAINS
                 z = zface(k) - zmax + zmax/nzg
 !***********Call density setup subroutine 
 
-                        albedo_a(i,j,k,1) = albedo
+                    if(x >= -.2 .and. x <= 0.2 .and. y >= -0.2 .and. y <= .2 .and. z >= -0.2 .and. z <= 0.2)then
+                        refrac(i,j,k) = 1.38
+                    else
+                        refrac(i,j,k) = 1.0
+                    end if
+                        ! albedo_a(i,j,k,1) = albedo
                         ! if(x >= -.2 .and. x <= 0.2 .and. y >= -0.2 .and. y <= .2 .and. z >= -0.2 .and. z <= 0.2)then
                         !     refrac(i,j,k) = 1.5
                     ! if(x >= -.3 .and. x <= 0.3 .and. y >= -0.5 .and. y <= .5 .and. z >= -zmax .and. z <= (-zmax+.3))then
@@ -90,11 +95,11 @@ CONTAINS
       print'(A,F9.5,A,F9.5)',' taueq1 = ',taueq1,'  taupole1 = ',taupole1
     end if
 
-    ! inquire(iolength=i)rhokap(:,:,:,3)
-    ! open(newunit=u, file='rhokap.dat', access='direct', status='REPLACE',form='unformatted', &
+    ! inquire(iolength=i)refrac(:,:,:)
+    ! open(newunit=u, file='refrac.dat', access='direct', status='REPLACE',form='unformatted', &
     !  recl=i)
-    !  write(u,rec=1) rhokap(:,:,:,3)
+    !  write(u,rec=1) refrac(:,:,:)
     !  close(u)
-
+    !  call exit(0)
     end subroutine gridset
 end MODULE gridset_mod

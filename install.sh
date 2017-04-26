@@ -23,6 +23,7 @@ shift # past argument or value
 done
 
 cd src
+set -e
 
 make clean && make 
 
