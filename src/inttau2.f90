@@ -13,7 +13,7 @@ CONTAINS
     !
         use constants,   only : nxg, nyg, nzg, xmax, ymax, zmax
         use photon_vars, only : xp, yp, zp, nxp, nyp, nzp, cost, sint, cosp, sinp, phi
-        use iarray,      only : rhokap
+        use iarray,      only : rhokap, jmean
         use opt_prop,    only : wavelength, material
         use vector_class
    
@@ -50,12 +50,14 @@ CONTAINS
             if(taurun + taucell < tau)then
                 taurun = taurun + taucell
                 d = d + dcell
+                jmean(celli, cellj, cellk, 1) = jmean(celli, cellj, cellk, 1) + dcell
                 call update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, .TRUE., dir, delta)
 
             else
 
                 dcell = (tau - taurun) / rhokap(celli,cellj,cellk,wavelength+material)
                 d = d + dcell
+                jmean(celli, cellj, cellk, 1) = jmean(celli, cellj, cellk, 1) + dcell
                 call update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, .FALSE., dir, delta)
                 exit
             end if
