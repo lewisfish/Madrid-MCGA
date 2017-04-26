@@ -49,6 +49,8 @@ CONTAINS
                 z = zface(k) - zmax + zmax/nzg
 !***********Call density setup subroutine 
                     if(x >= -.3 .and. x <= 0.3 .and. y >= -0.5 .and. y <= .5 .and. z >= -zmax .and. z <= (-zmax+.3))then
+                        !these are wrong optical properties!!!********************
+
                         refrac(i,j,k)=1.38
                         albedo_a(i,j,k,3) = 0.001                   !809nm crystal
                         rhokap(i,j,k,3)   = 6.
