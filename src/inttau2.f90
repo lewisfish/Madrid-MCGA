@@ -556,6 +556,8 @@ CONTAINS
         call tau2(xcell,ycell,zcell,delta,tau3)
 
 
+        !over 4 pi for 1st fluro photon
+        prob = exp(-tau1)
 
         bin_wid = 4.*xmax/Nbins
 
