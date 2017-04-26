@@ -418,7 +418,7 @@ CONTAINS
 
     end subroutine refract
 
-   
+
     function fresnel(I, N, n1, n2) result (tir)
     !calculates the fresnel coefficents
     !
@@ -427,13 +427,17 @@ CONTAINS
 
         implicit none
 
-        real, intent(IN) :: n1, n2
-        type(vector) :: N, I
+        real, intent(IN)         :: n1, n2
+        type(vector), intent(IN) :: I, N
         real             :: crit, costt, sintt, sint2, cost2, tir, f1, f2
 
         crit = n2/n1
 
-        costt = abs(N .dot. I)
+        costt = N .dot. I
+        if(costt < 0.)then
+            print*,costt
+            call exit(0)
+        end if
         sintt = sqrt(1. - costt * costt)
 
         if(sintt > crit)then
@@ -451,6 +455,37 @@ CONTAINS
         end if
    
     end function fresnel
+
+   
+    ! function fresnel(pdir, n1, n2) result (tir)
+    ! !calculates the fresnel coefficents
+    ! !
+    ! !
+    !     implicit none
+
+    !     real, intent(IN) :: n1, n2, pdir
+    !     real             :: crit, costt, sintt, sint2, cost2, tir, f1, f2
+
+    !     crit = n2/n1
+
+    !     costt = abs(pdir)
+    !     sintt = sqrt(1. - costt * costt)
+
+    !     if(sintt > crit)then
+    !         tir = 1.0
+    !         return
+    !     else
+    !         sint2 = (n1/n2)*sintt
+    !         cost2 = sqrt(1. - sint2 * sint2)
+    !         f1 = abs((n1*costt - n2*cost2) / (n1*costt + n2*cost2))**2
+    !         f2 = abs((n1*cost2 - n2*costt) / (n1*cost2 + n2*costt))**2
+
+    !         tir = 0.5 * (f1 + f2)
+    !     if(isnan(tir) .or. tir > 1. .or. tir < 0.)print*,'TIR: ', tir!, f1, f2, cost,sint,cost,sint2
+    !         return
+    !     end if
+   
+    ! end function fresnel
 
 
     ! function fresnel(pdir, n1, n2) result (tir)

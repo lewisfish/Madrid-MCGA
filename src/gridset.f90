@@ -48,7 +48,7 @@ CONTAINS
             do k = 1, nzg
                 z = zface(k) - zmax + zmax/nzg
 !***********Call density setup subroutine 
-                        rhokap(i,j,k,1)   = kappa
+
                         albedo_a(i,j,k,1) = albedo
                         ! if(x >= -.2 .and. x <= 0.2 .and. y >= -0.2 .and. y <= .2 .and. z >= -0.2 .and. z <= 0.2)then
                         !     refrac(i,j,k) = 1.5
