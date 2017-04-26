@@ -48,22 +48,24 @@ CONTAINS
             do k = 1, nzg
                 z = zface(k) - zmax + zmax/nzg
 !***********Call density setup subroutine 
-                    if(x >= -.3 .and. x <= 0.3 .and. y >= -0.5 .and. y <= .5 .and. z >= -zmax .and. z <= (-zmax+.3))then
-                        refrac(i,j,k)=1.38
-                        albedo_a(i,j,k,3) = 0.001                   !809nm crystal
-                        rhokap(i,j,k,3)   = 6.
-                    
-                        albedo_a(i,j,k,4) = 0.001                   !1064nm crystal  mus = 0.001 cm-1, mua = 0.004 cm-1
-                        rhokap(i,j,k,4)   = 0.02       !900nm crystal   mus = 0.001 cm-1, mua = 0.02 cm-1
-                    else
-                        call init_opt1
-                        rhokap(i,j,k,1)   = kappa        
+                        rhokap(i,j,k,1)   = kappa
                         albedo_a(i,j,k,1) = albedo
-                      
-                        call init_opt3
-                        rhokap(i,j,k,2)   = kappa
-                        albedo_a(i,j,k,2) = albedo
-                    end if
+                        ! if(x >= -.2 .and. x <= 0.2 .and. y >= -0.2 .and. y <= .2 .and. z >= -0.2 .and. z <= 0.2)then
+                        !     refrac(i,j,k) = 1.5
+                    ! if(x >= -.3 .and. x <= 0.3 .and. y >= -0.5 .and. y <= .5 .and. z >= -zmax .and. z <= (-zmax+.3))then
+                    !     refrac(i,j,k)=1.38
+                    !     albedo_a(i,j,k,3) = 0.001                   !809nm crystal
+                    !     rhokap(i,j,k,3)   = 6.
+                    
+                    !     albedo_a(i,j,k,4) = 0.001                   !1064nm crystal  mus = 0.001 cm-1, mua = 0.004 cm-1
+                    !     rhokap(i,j,k,4)   = 0.02       !900nm crystal   mus = 0.001 cm-1, mua = 0.02 cm-1
+                    ! else
+                    !     call init_opt1
+                    !     rhokap(i,j,k,1)   = kappa        
+                    !     albedo_a(i,j,k,1) = albedo
+                    ! else
+                    !     refrac(i,j,k) = 1.0
+                    ! end if
             end do
         end do
     end do

@@ -21,7 +21,7 @@ program main
     call directory
     call alloc_array
 
-    depth = 0.5 !depth = zmax
+    depth = 2. !depth = zmax
     do i = 1, 1
         call mcpolar(depth, id, numproc)
         depth = depth - 0.1

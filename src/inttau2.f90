@@ -13,8 +13,8 @@ CONTAINS
     !
         use constants,   only : nxg, nyg, nzg, xmax, ymax, zmax
         use photon_vars, only : xp, yp, zp, nxp, nyp, nzp, cost, sint, cosp, sinp, phi
-        use iarray,      only : rhokap
-        use opt_prop,    only : wavelength, material
+        use iarray,      only : rhokap, jmean
+        use opt_prop,    only : wavelength, material, kappa
         use vector_class
    
         implicit none
@@ -45,43 +45,64 @@ CONTAINS
         do
             dir = (/.FALSE., .FALSE., .FALSE./)
             dcell = wall_dist(celli, cellj, cellk, xcur, ycur, zcur, dir)
-            taucell = dcell * rhokap(celli,cellj,cellk,wavelength+material)
+            taucell = dcell * kappa!rhokap(celli,cellj,cellk,1)
 
             if(taurun + taucell < tau)then
                 taurun = taurun + taucell
                 d = d + dcell
+                jmean(celli,cellj,cellk,1)=jmean(celli,cellj,cellk,1) + dcell
                 call update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, .TRUE., dir, delta)
 
             else
 
-                dcell = (tau - taurun) / rhokap(celli,cellj,cellk,wavelength+material)
+                dcell = (tau - taurun) / kappa!rhokap(celli,cellj,cellk,1)
                 d = d + dcell
+                jmean(celli,cellj,cellk,1)=jmean(celli,cellj,cellk,1) + dcell
+
                 call update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, .FALSE., dir, delta)
                 exit
             end if
          
             if(celli == -1 .or. cellj == -1 .or. cellk == -1)then
-                if(celli == -1 .or. cellj == -1)then
-                    call repeat_bounds(celli, cellj, xcur, ycur, xmax, ymax, nxg, nyg, delta)
-                    if(celli == -1 .or. cellj == -1 .or. tflag)then
+                if(celli == -1 .or. cellk == -1)then
+                    call repeat_bounds(celli, cellk, xcur, zcur, xmax, zmax, nxg, nzg, delta)
+                    if(celli == -1 .or. cellk == -1 .or. tflag)then
                        print*,'error',celli,cellj,tflag
                     end if
-                elseif(cellk == -1)then
-                    if(zcur >= 2.*zmax-delta)then
-                        zcur = 2.*zmax - delta
-                        cellk = nzg
+                elseif(cellj == -1)then
+                    if(ycur >= 2.*ymax-delta)then
+                        ycur = 2.*ymax
+                        cellj = nyg
                         rflag = .false.
-                        incd = vector(nxp, nyp, nzp)
+                        incd = vector(nxp,nyp,nzp)
+                        norm = vector(0.,-1,0.)
+                        ! print*,incd
                         incd = incd%magnitude()
-                        norm = vector(0.,0.,1.)
-                        call reflect(incd, norm)
+                        ! print*,incd
+                        ! call exit(0)
+                        if(ran2(iseed) <= fresnel(incd, norm ,1.38, 1.0))then
+                            call incd%print()
+                            call reflect(incd, norm)
+                            call incd%print()
+
+                            print*,
+                            nxp = incd%x
+                            nyp = incd%y
+                            nzp = incd%z
+                            phi = atan2(nyp, nzp)
+                            sinp = sin(phi)
+                            cosp = cos(phi)
+                            cost = nzp
+                            sint = 1.-cost*cost
                         ! call reflect(zcur, zmax, nzp, cost, sint, 1.38, 1.0, iseed, delta, rflag)
-                        if(rflag)then
-                            phi = atan2(sinp, cosp)
-                            nxp = sint * cosp
-                            nyp = sint * sinp
-                            nzp = cost
-                            else
+                        ! if(rflag)then
+                        !     phi = atan2(sinp, cosp)
+                        !     nxp = sint * cosp
+                        !     nyp = sint * sinp
+                        !     nzp = cost
+                            taurun = 0.
+                            tau = -log(ran2(iseed))
+                        else
                             tflag = .true.
                             exit
                         end if
@@ -353,7 +374,7 @@ CONTAINS
     !         if(pdir_s < 0.)then
     !             pdir_s = 0.
     !         else
-    !             pdir_s = sign(sqrt(pdir_s), tmp)
+    !             pdir_s = (sqrt(pdir_s))
     !         end if 
     !     end if
     ! end subroutine reflect
@@ -398,18 +419,21 @@ CONTAINS
     end subroutine refract
 
    
-    function fresnel(pdir, n1, n2) result (tir)
+    function fresnel(I, N, n1, n2) result (tir)
     !calculates the fresnel coefficents
     !
     !
+        use vector_class
+
         implicit none
 
-        real, intent(IN) :: n1, n2, pdir
+        real, intent(IN) :: n1, n2
+        type(vector) :: N, I
         real             :: crit, costt, sintt, sint2, cost2, tir, f1, f2
 
         crit = n2/n1
 
-        costt = abs(pdir)
+        costt = abs(N .dot. I)
         sintt = sqrt(1. - costt * costt)
 
         if(sintt > crit)then
@@ -427,6 +451,37 @@ CONTAINS
         end if
    
     end function fresnel
+
+
+    ! function fresnel(pdir, n1, n2) result (tir)
+    ! !calculates the fresnel coefficents
+    ! !
+    ! !
+    !     implicit none
+
+    !     real, intent(IN) :: n1, n2, pdir
+    !     real             :: crit, costt, sintt, sint2, cost2, tir, f1, f2
+
+    !     crit = n2/n1
+
+    !     costt = abs(pdir)
+    !     sintt = sqrt(1. - costt * costt)
+
+    !     if(sintt > crit)then
+    !         tir = 1.0
+    !         return
+    !     else
+    !         sint2 = (n1/n2)*sintt
+    !         cost2 = sqrt(1. - sint2 * sint2)
+    !         f1 = abs((n1*costt - n2*cost2) / (n1*costt + n2*cost2))**2
+    !         f2 = abs((n1*cost2 - n2*costt) / (n1*cost2 + n2*costt))**2
+
+    !         tir = 0.5 * (f1 + f2)
+    !     if(isnan(tir) .or. tir > 1. .or. tir < 0.)print*,'TIR: ', tir!, f1, f2, cost,sint,cost,sint2
+    !         return
+    !     end if
+   
+    ! end function fresnel
 
 
     subroutine taufind1(xcell,ycell,zcell,delta,taurun)

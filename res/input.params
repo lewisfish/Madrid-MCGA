@@ -1,6 +1,6 @@
-1000000000           nphotons
-1.5              xmax
-1.5              ymax
-.5              zmax
+250000           nphotons
+1.              xmax
+1.              ymax
+1.              zmax
 1.0             n1
 1.38              n2

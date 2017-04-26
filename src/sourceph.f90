@@ -4,7 +4,7 @@ implicit none
 save
 
 CONTAINS
-   subroutine sourceph(xcell,ycell,zcell,iseed, j)
+   subroutine sourceph(xcell,ycell,zcell,iseed, delta)
 
    use constants, only : nxg,nyg,nzg,pi,twopi,xmax,ymax,zmax
    use photon_vars
@@ -14,26 +14,28 @@ CONTAINS
 
    integer, intent(OUT)   :: xcell, ycell, zcell
    integer, intent(INOUT) :: iseed
-   integer, intent(IN)    :: j
+   real, intent(IN)    :: delta
    real                   :: ran2
 
 
-      zp = zmax-(1.e-5*(2.*zmax/nzg))
+      zp = zmax*(2.*ran2(iseed)-1.)
       xp = xmax*(2.*ran2(iseed)-1.)
-      yp = ymax*(2.*ran2(iseed)-1.)
+      yp = ymax!*(2.*ran2(iseed)-1.)
       
-      phi  = twopi*ran2(iseed)
+      phi  = 3.*pi/2.!twopi*ran2(iseed)  
       cosp = cos(phi)
       sinp = sin(phi)         
-      sint = 0.
-      cost = -1.
+      sint = 1.
+      cost = 0.
  
    
    nxp = sint * cosp  
    nyp = sint * sinp
    nzp = cost
    
-   
+   ! print*,nxp,nyp,nzp
+   ! call exit(0)
+
    !*************** Linear Grid *************************
    xcell=int(nxg*(xp+xmax)/(2.*xmax))+1
    ycell=int(nyg*(yp+ymax)/(2.*ymax))+1
