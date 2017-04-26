@@ -148,7 +148,7 @@ Module vector_class
 
             real :: tmp
 
-            tmp = sqrt(this%x + this%y + this%z)
+            tmp = sqrt(this%x**2 + this%y**2 + this%z**2)
             magnitude_fn = this / tmp
 
         end function magnitude_fn

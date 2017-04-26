@@ -65,7 +65,7 @@ open(10,file=trim(resdir)//'input.params',status='old')
    read(10,*) n2
    close(10)
 
-   zmax = depth
+   ! zmax = depth
 
 ! set seed for rnd generator. id to change seed for each process
 iseed=-456123456+id
@@ -76,7 +76,7 @@ iseed=-456123456+id
 
 iseed=-abs(iseed)  ! Random number seed must be negative for ran2
 
-call init_opt4
+call init_opt1
 
 if(id == 0)then
    print*, ''      
@@ -95,7 +95,7 @@ call MPI_Barrier(MPI_COMM_WORLD, error)
 print*,'Photons now running on core: ',id
 do j=1,nphotons
   
-   ! call init_opt4
+   call init_opt1
    wavelength = 0
    material = 1
 
@@ -106,30 +106,30 @@ do j=1,nphotons
    end if
     
 !***** Release photon from point source *******************************
-   call sourceph(xcell,ycell,zcell,iseed,j)
+   call sourceph(xcell,ycell,zcell,iseed,delta)
 
 !****** Find scattering location
 
     call tauint1(xcell,ycell,zcell,tflag,iseed,delta)
-    if(wavelength /= 0)then
-        call peeling(xcell,ycell,zcell,delta)
-    end if
+    ! if(wavelength /= 0)then
+        ! call peeling(xcell,ycell,zcell,delta)
+    ! end if
 !******** Photon scatters in grid until it exits (tflag=TRUE) 
    do while(tflag.eqv..FALSE.)
       ran = ran2(iseed)
-      if(ran < albedo_a(xcell,ycell,zcell,wavelength +material))then!interacts with tissue
+      if(ran < albedo)then!interacts with tissue
             call stokes(iseed)
             nscatt = nscatt + 1
          else
-            if(material==3)then
-               wavelength = 1
-               hgg = 0.
-               call stokes(iseed)
-               hgg = .9
-            else
+            ! if(material==3)then
+               ! wavelength = 1
+               ! hgg = 0.
+               ! call stokes(iseed)
+               ! hgg = .9
+            ! else
                tflag=.true.
                exit
-            end if
+            ! end if
       end if
 
 
@@ -137,21 +137,22 @@ do j=1,nphotons
 !************ Find next scattering location
         call tauint1(xcell,ycell,zcell,tflag,iseed,delta)
 
-        if(wavelength /=0 .and. .not. tflag)then
+        ! if(wavelength /=0 .and. .not. tflag)then
             ! if(material==3)print*,material,tflag
-            call peeling(xcell,ycell,zcell,delta)
-        end if
+            ! call peeling(xcell,ycell,zcell,delta)
+        ! end if
    end do
 end do      ! end loop over nph photons
 
 call MPI_REDUCE(image,imageGLOBAL,size(image,1)*size(image,2)*size(image,3),MPI_DOUBLE_PRECISION,MPI_SUM,0,MPI_COMM_WORLD,error)
 call MPI_BARRIER(MPI_COMM_WORLD, error)
 
-call MPI_REDUCE(jmean,jmeanGLOBAL,nxg*nyg*nzg*4,MPI_DOUBLE_PRECISION,MPI_SUM,0,MPI_COMM_WORLD,error)
+
+call MPI_REDUCE(jmean, jmeanGLOBAL, nxg*nyg*nzg*4,MPI_DOUBLE_PRECISION,MPI_SUM,0,MPI_COMM_WORLD,error)
 call MPI_BARRIER(MPI_COMM_WORLD, error)
 
 if(id == 0)then
-   call writer(depth)
+   call writer(nphotons,numproc,depth)
    print*,'write done'
 end if
 end subroutine mcpolar

@@ -12,12 +12,17 @@ CONTAINS
    
    implicit none
 
-   hgg = 0.9
-   g2  = hgg**2
-   mua = .1
-   mus = 174.5!. / (1. - hgg)
+   ! hgg = 0.9
+   ! g2  = hgg**2
+   ! mua = .1
+   ! mus = 174.5!. / (1. - hgg)
 
-   kappa  = mus + mua !+ 5.3e-3
+   hgg = 0.86
+   g2 = hgg*2
+   mua = 0.23
+   mus = 21. / (1. - hgg)
+
+   kappa  = mus + mua 
    albedo = mus / kappa
 
    end subroutine init_opt1
