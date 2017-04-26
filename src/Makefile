@@ -1,5 +1,5 @@
 FCOMP = mpifort
-FCFLAGS = -Ofast -cpp -freal-4-real-8
+FCFLAGS = -O2 -cpp -freal-4-real-8
 #FCFLAGS = -O2 -freal-4-real-8 -g -fcheck=all -fbounds-check -fbacktrace 
 #-ffpe-trap=zero,overflow,underflow 
 #FCFLAGS = -Wall -Wextra -pedantic

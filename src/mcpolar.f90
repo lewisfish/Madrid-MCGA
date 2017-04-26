@@ -147,6 +147,9 @@ end do      ! end loop over nph photons
 call MPI_REDUCE(image,imageGLOBAL,size(image,1)*size(image,2)*size(image,3),MPI_DOUBLE_PRECISION,MPI_SUM,0,MPI_COMM_WORLD,error)
 call MPI_BARRIER(MPI_COMM_WORLD, error)
 
+call MPI_REDUCE(jmean,jmeanGLOBAL,nxg*nyg*nzg*4,MPI_DOUBLE_PRECISION,MPI_SUM,0,MPI_COMM_WORLD,error)
+call MPI_BARRIER(MPI_COMM_WORLD, error)
+
 if(id == 0)then
    call writer(depth)
    print*,'write done'
