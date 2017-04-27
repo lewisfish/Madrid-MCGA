@@ -2,89 +2,93 @@ MODULE ch_opt
 
 implicit none
 
+private
+public :: init_opt1, init_opt2, init_opt3, init_opt4
+
 CONTAINS
    
    subroutine init_opt1
-!
-!  subroutine to set tissue optical properties 808nm
-!
-   use opt_prop
-   
-   implicit none
+   !
+   !  subroutine to set tissue optical properties 808nm
+   !
+      use opt_prop
+      
+      implicit none
 
-   ! hgg = 0.9
-   ! g2  = hgg**2
-   ! mua = .1
-   ! mus = 174.5!. / (1. - hgg)
+      ! hgg = 0.9
+      ! g2  = hgg**2
+      ! mua = .1
+      ! mus = 174.5!. / (1. - hgg)
 
-   hgg = 0.86
-   g2 = hgg*2
-   mua = 0.23
-   mus = 21. / (1. - hgg)
+      hgg = 0.86
+      g2 = hgg*2
+      mua = 0.23
+      mus = 21. / (1. - hgg)
 
-   kappa  = mus + mua 
-   albedo = mus / kappa
+      kappa  = mus + mua 
+      albedo = mus / kappa
 
    end subroutine init_opt1
    
    subroutine init_opt2
-!
-!  subroutine to set tissue optical properties 900nm
-!
-   use opt_prop
+   !
+   !  subroutine to set tissue optical properties 900nm
+   !
+      use opt_prop
 
-   implicit none
+      implicit none
 
-   hgg = 0.9
-   g2  = hgg**2
-   mua = .15
-   mus = 180.65 !/ (1. - hgg)
+      hgg = 0.9
+      g2  = hgg**2
+      mua = .15
+      mus = 180.65 !/ (1. - hgg)
 
-   kappa  = mus + mua !+ 5.3e-3
-   albedo = mus / kappa
+      kappa  = mus + mua !+ 5.3e-3
+      albedo = mus / kappa
 
    end subroutine init_opt2
    
    subroutine init_opt3
-!
-!  subroutine to set tissue optical properties 1064nm
-!
-   use opt_prop
+   !
+   !  subroutine to set tissue optical properties 1064nm
+   !
+      use opt_prop
 
-   implicit none
+      implicit none
 
-   hgg = 0.9
-   g2  = hgg**2
-   mua = .13
-   mus = 9.49 / (1. - hgg) !from s.jacques paper formula using jacques 1996 data
+      hgg = 0.9
+      g2  = hgg**2
+      mua = .13
+      mus = 9.49 / (1. - hgg) !from s.jacques paper formula using jacques 1996 data
 
-   kappa  = mus + mua !+ 5.3e-3
-   albedo = mus / kappa
+      kappa  = mus + mua !+ 5.3e-3
+      albedo = mus / kappa
 
    end subroutine init_opt3
    
    subroutine init_opt4
-!
-!  subroutine to set tissue optical properties 808nm
-!
-   use opt_prop
-   
-   implicit none
+   !
+   !  subroutine to set tissue optical properties 808nm
+   !
+      use opt_prop
+      
+      implicit none
 
-   hgg = 0.7
-   g2  = hgg**2
-   mua = .23
-   mus = 21. / (1. - hgg)
+      hgg = 0.7
+      g2  = hgg**2
+      mua = .23
+      mus = 21. / (1. - hgg)
 
-   kappa  = mus + mua 
-   albedo = mus / kappa
+      kappa  = mus + mua 
+      albedo = mus / kappa
 
    end subroutine init_opt4
 
+
    subroutine sample(array, size_of, cdf, wave, iseed)
-!      
-!  samples a random value from an array based upon its cdf     
-!      
+   !      
+   !  samples a random value from an array based upon its cdf     
+   !      
       implicit none
       
       integer, intent(IN)    :: iseed, size_of
@@ -101,10 +105,11 @@ CONTAINS
    
    end subroutine sample
    
+
    subroutine lin_inter_1D(array, cdf, value, length, nlow, y)
-!
-!  linear interpolates between values for an array and its cdf
-!   
+   !
+   !  linear interpolates between values for an array and its cdf
+   !   
       implicit none
    
       real,    intent(OUT)  :: y
@@ -116,10 +121,11 @@ CONTAINS
    
    end subroutine lin_inter_1D
    
+
    subroutine lin_inter_2D(array,value,length,nlow,y)
-!
-!  linear interpolation for an array
-!
+   !
+   !  linear interpolation for an array
+   !
       implicit none
 
       real,    intent(OUT)  :: y
@@ -131,10 +137,11 @@ CONTAINS
    
    end subroutine lin_inter_2D
    
+
    subroutine search_1D(length,array,nlow,value)
-!
-!  search by bisection for 1D array
-!
+   !
+   !  search by bisection for 1D array
+   !
       implicit none
       
       integer              :: nup,length,middle
@@ -156,9 +163,9 @@ CONTAINS
    end subroutine search_1D
    
    subroutine search_2D(length,array,nlow,value)
-!
-!  search by bisection for 2D array
-!
+   !
+   !  search by bisection for 2D array
+   !
       implicit none
       
       integer              :: nup,length,middle
@@ -180,9 +187,9 @@ CONTAINS
    end subroutine search_2D
    
    subroutine mk_cdf(array,cdf,length)
-!
-!  subroutine that creates cdf for an array of values.
-!
+   !
+   !  subroutine that creates cdf for an array of values.
+   !
       implicit none
 
       integer, intent(IN)    :: length
@@ -191,14 +198,14 @@ CONTAINS
       real                   :: summ
       integer                :: i,j
    
-      do j=1,length-1
-         summ=0.
-         do i=1,j   
-            summ=summ+0.5*(array(i+1,2)+array(i,2))*(array(i+1,1)-array(i,1))
+      do j = 1, length-1
+         summ = 0.
+         do i = 1, j   
+            summ = summ + 0.5*(array(i+1, 2) + array(i, 2)) * (array(i+1, 1) - array(i, 1))
          end do
-         cdf(j)=summ      
+         cdf(j) = summ      
       end do
-      cdf=cdf/cdf(length-1)
+      cdf = cdf/cdf(length-1)
    
    end subroutine mk_cdf
 end module ch_opt

@@ -6,9 +6,9 @@ MODULE photon_vars
 !           sin/cos(%)/phi:various angles related to photons flight 
 !           angles measured from ''north'' in thetas case.
 
-implicit none
-save
+    implicit none
+    save
 
-real :: xp,yp,zp,nxp,nyp,nzp,sint,cost,sinp,cosp,phi
+    real :: xp, yp, zp, nxp, nyp, nzp, sint, cost, sinp, cosp, phi
 
 end MODULE photon_vars

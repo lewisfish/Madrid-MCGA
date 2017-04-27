@@ -61,8 +61,6 @@ open(10,file=trim(resdir)//'input.params',status='old')
    read(10,*) xmax
    read(10,*) ymax
    read(10,*) zmax
-   read(10,*) n1
-   read(10,*) n2
    close(10)
 
    ! zmax = depth

@@ -367,7 +367,7 @@ CONTAINS
 
 
     subroutine repeat_bounds(cella, cellb, acur, bcur, amax, bmax, nag, nbg, delta) 
-    !if photon leaves grid in a direction a or b, then photon is transported to otherside and continues being simulated
+    !   if photon leaves grid in a direction a or b, then photon is transported to otherside and continues being simulated
     !
     !
         implicit none
@@ -400,8 +400,6 @@ CONTAINS
                 print*,'Error in Repeat_bounds...'
                 call exit(0)
             end if
-        ! else
-        ! tflag=.true.
         end if
     end subroutine repeat_bounds
    
@@ -432,7 +430,9 @@ CONTAINS
 
 
     subroutine reflect(I, N)
-
+    !   get vector of reflected photon
+    !
+    !
         use vector_class
 
         implicit none
@@ -449,7 +449,9 @@ CONTAINS
 
 
     subroutine refract(I, N, eta)
-        
+    !   get vector of refracted photon
+    !
+    !
         use vector_class
 
         implicit none
@@ -462,7 +464,7 @@ CONTAINS
 
         real :: c1, c2
 
-        c1 = (N .dot. I) ! or cos(theta_1)
+        c1 = (N .dot. I)
         if(c1 < 0.)then
             c1 = -c1
         else
@@ -471,15 +473,14 @@ CONTAINS
         c2 = sqrt(1. - (eta)**2 * (1.-c1**2))
 
         T = eta*I + (eta * c1 - c2) * N 
-        ! print*,I,T,eta
-        ! call exit(0)
+
         I = T
 
     end subroutine refract
 
 
     function fresnel(I, N, n1, n2) result (tir)
-    !calculates the fresnel coefficents
+    !   calculates the fresnel coefficents
     !
     !
         use vector_class
@@ -512,7 +513,7 @@ CONTAINS
 
 
     subroutine taufind1(xcell,ycell,zcell,delta,taurun)
-    !routine to find tau from current position to edge of grid in a direction (nxp,nyp,nzp)
+    !   routine to find tau from current position to edge of grid in a direction (nxp,nyp,nzp)
     !
     !
         use photon_vars, only : xp, yp, zp
@@ -611,7 +612,6 @@ CONTAINS
         hgfact=(1.-g2)/(4.*pi*(1.+g2-2.*hgg*cosa)**(1.5))
 
         prob = exp(-tau3) * hgfact
-        ! print*,hgfact,prob
 
         ! if(material==3)print*,material+wavelength
         image(binx, biny,material + wavelength) = image(binx, biny, material + wavelength) + prob
@@ -627,5 +627,4 @@ CONTAINS
         ! call update_voxels(xp+xmax, yp+ymax, zp+zmax, xcell, ycell, zcell)
     
     end subroutine peeling
-
 end module inttau2
