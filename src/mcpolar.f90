@@ -35,6 +35,7 @@ double precision  :: nscatt
 real              :: ran, delta, ran2, phiim, thetaim
 
 integer           :: error
+character(len=3)  :: fn
 
 call zarray
 
@@ -87,13 +88,12 @@ call gridset(id, depth)
 
 !***** Set small distance for use in optical depth integration routines 
 !***** for roundoff effects when crossing cell walls
-   delta = 1.e-8*(2.*zmax/nzg)
-
+   delta = 1.e-9*(2.*zmax/nzg)
 !loop over photons 
 call MPI_Barrier(MPI_COMM_WORLD, error)
 print*,'Photons now running on core: ',id
 do j=1,nphotons
-  
+
    call init_opt1
    wavelength = 0
    material = 1

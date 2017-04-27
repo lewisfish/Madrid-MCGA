@@ -8,7 +8,7 @@ CONTAINS
 
 
         use constants, only : fileplace, xmax, ymax, zmax, nxg, nyg, nzg!, nbins
-        use iarray,    only : jmeanGLOBAL,yface
+        use iarray,    only : jmeanGLOBAL, zface
 
         implicit none
 
@@ -25,22 +25,6 @@ CONTAINS
         open(newunit=u,file=trim(fileplace)//'jmean/jmean.dat', access='direct',form='unformatted',status='replace',recl=i)
         write(u,rec=1)jmeanGLOBAL(:,:,:,1)
         close(u)
-
-        ! tmp = 0.
-        ! do i = 1, nzg
-        !     do j = 1, nxg
-        !         do k = 1, nyg
-        !             tmp(i) = tmp(i) + jmeanGLOBAL(i,j,k,1)
-        !         end do
-        !     end do
-        ! end do
-
-        ! tmp = tmp / (nxg*nzg)
-
-        ! open(newunit=u,file='x-plot.dat')
-        ! do i = nyg, 1, -1
-        !     write(u,*)yface(nzg-i+1),tmp(i)
-        ! end do
 
         ! open(newunit=u,file=trim(fileplace)//'im/image-809-'//trim(fn)//'.dat',status='replace')
         ! do i = -((Nbins-1)/2), ((Nbins-1)/2)

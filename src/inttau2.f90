@@ -11,7 +11,7 @@ CONTAINS
     !optical depth integration subroutine
     !
     !
-        use constants,   only : xmax, ymax, zmax!,nxg, nyg, nzg, 
+        use constants,   only : xmax, ymax, zmax,nxg, nyg
         use photon_vars, only : xp, yp, zp!, nxp, nyp, nzp!, cost, sint, cosp, sinp, phi
         use iarray,      only : jmean
 
@@ -66,48 +66,17 @@ CONTAINS
                                 tau, taurun)
                 exit
             end if
-         
             if(celli == -1 .or. cellj == -1 .or. cellk == -1)then
-                tflag = .true.
-                exit
-                ! if(cellj == -1 .or. cellk == -1)then
-                !     call repeat_bounds(cellj, cellk, ycur, zcur, ymax, zmax, nyg, nzg, delta)
-                !     if(cellj == -1 .or. cellk == -1 .or. tflag)then
-                !        print*,'error',cellj,cellk,tflag
-                !     end if
-                ! elseif(celli == -1)then
-                !     if(xcur >= 2.*xmax-delta)then
-                !         xcur = 2.*xmax
-                !         celli = nxg
-                !         rflag = .false.
-                !         incd = vector(nxp,nyp,nzp)
-                !         norm = vector(-1.,0.,0.)
-                !         incd = incd%magnitude()
-                !         if(ran2(iseed) <= fresnel(incd, norm ,1.38, 1.0))then
-                !             call reflect(incd, norm)
-
-                !             nxp = incd%x
-                !             nyp = incd%y
-                !             nzp = incd%z
-
-                !             phi = atan2(nyp/sint, nxp/sint)
-                !             sinp = sin(phi)
-                !             cosp = cos(phi)
-
-                !             cost = nzp
-                !             sint = sqrt(1.-cost*cost)
-
-                !             taurun = 0.
-                !             tau = -log(ran2(iseed))
-                !         else
-                !             tflag = .true.
-                !             exit
-                !         end if
-                !     else
-                !         tflag = .true.
-                !         exit
-                !     end if
-                ! end if
+                if(celli == -1 .or. cellj == -1)then
+                    call repeat_bounds(celli, cellj, xcur, ycur, xmax, ymax, nxg, nyg, delta)
+                    tflag = .false.
+                    if(celli == -1 .or. cellj == -1 .or. tflag)then
+                       print*,'error',celli,cellj,tflag
+                    end if
+                else
+                    tflag = .true.
+                    exit
+                end if
             end if
 
         end do
@@ -179,6 +148,7 @@ CONTAINS
         use photon_vars, only : nxp, nyp, nzp, phi, cost, sint, cosp, sinp
         ! use opt_prop,    only : material
         use iarray,      only : xface, yface, zface, refrac
+        use constants,   only : nzg
         use vector_class
 
         implicit none
@@ -193,10 +163,13 @@ CONTAINS
       type(vector) :: norm, incd
       real         :: n1, n2, ran2
       integer      :: iold, jold, kold
+      logical      :: rflag
 
       iold = celli
       jold = cellj
       kold = cellk
+
+      rflag = .false.
 
       n1 = refrac(celli,cellj,cellk)
       
@@ -266,13 +239,17 @@ CONTAINS
 
       if(wall_flag)then
          call update_voxels(xcur, ycur, zcur, celli, cellj, cellk)
-         if(celli == -1 .or. cellj == -1 .or. cellk == -1)then
+         if(celli == -1 .or. cellj == -1)then
             tflag = .true.
             return
         end if
         n2 = refrac(celli,cellj,cellk)
       end if
       
+      if(nzp .gt. 0. .and. cellk == -1)then
+        cellk = nzg+1
+        n2 = refrac(celli,cellj,cellk)
+      end if
 
         if(n1 /= n2 .and. wall_flag)then
             incd = vector(nxp, nyp, nzp)
@@ -280,18 +257,41 @@ CONTAINS
             if(iold /= celli)then                           ! x-dir
 
                 norm = vector(1., 0., 0.)
-                call reflect_refract(incd, norm, n1, n2, iseed)
-
+                call reflect_refract(incd, norm, n1, n2, iseed, rflag)
+                if(rflag)then
+                    celli = iold
+                    if(nxp > 0.)then
+                        xcur = xface(celli+1) - delta
+                    elseif(nxp < 0.)then
+                        xcur = xface(celli) + delta
+                    end if
+                end if
             elseif(jold /= cellj)then                       ! y-dir
 
                 norm = vector(0., 1., 0.)
-                call reflect_refract(incd, norm, n1, n2, iseed)
-
+                call reflect_refract(incd, norm, n1, n2, iseed, rflag)
+                if(rflag)then
+                    cellj = jold
+                    if(nyp > 0.)then
+                        ycur = yface(cellj+1) - delta
+                    elseif(nyp < 0.)then
+                        ycur = yface(cellj) + delta
+                    end if
+                end if
             elseif(kold /= cellk)then                       ! z-dir
-
                 norm = vector(0., 0., 1.)
-                call reflect_refract(incd, norm, n1, n2, iseed)
-
+                call reflect_refract(incd, norm, n1, n2, iseed, rflag)
+                if(rflag)then
+                    cellk = kold
+                    if(nzp > 0.)then
+                        zcur = zface(cellk+1) - delta
+                    elseif(nzp < 0.)then
+                        zcur = zface(cellk) + delta
+                    end if
+                else
+                    cellk = -1
+                    tflag = .true.
+                end if
             else
                 print*,'Error in reflect/refract in update_pos!'
                 call exit(0)
@@ -406,47 +406,25 @@ CONTAINS
     end subroutine repeat_bounds
    
 
-    ! subroutine reflect(pcur, pmax, pdir, pdir_c, pdir_s, n1, n2, iseed, delta, rflag)
-    ! !carries out fresnel reflection
-    ! !
-    ! !
-    !     implicit none
-
-    !     real,    intent(IN)    :: n1, n2, pcur, delta, pdir, pmax
-    !     real,    intent(INOUT) :: pdir_c, pdir_s
-    !     integer, intent(INOUT) :: iseed
-    !     logical, intent(INOUT) :: rflag
-    !     real                   :: ran2, tmp
-
-    !     rflag = .false.
-    !     tmp = pdir_s
-    !     if(ran2(iseed) <= fresnel(pdir, n1, n2))then
-    !         rflag = .true.
-    !         pdir_c = -pdir_c
-    !         pdir_s = (1. - pdir_c*pdir_c)
-    !         if(pdir_s < 0.)then
-    !             pdir_s = 0.
-    !         else
-    !             pdir_s = (sqrt(pdir_s))
-    !         end if 
-    !     end if
-    ! end subroutine reflect
-
-    subroutine reflect_refract(I, N, n1, n2, iseed)
+    subroutine reflect_refract(I, N, n1, n2, iseed, rflag)
 
         use vector_class
 
         implicit none
 
         type(vector), intent(INOUT) :: I
-        type(vector), intent(INOUT)  :: N
+        type(vector), intent(INOUT) :: N
         real,         intent(IN)    :: n1, n2
         integer,      intent(INOUT) :: iseed
+        logical,      intent(OUT)   :: rflag
 
         real :: ran2
 
+        rflag = .FALSE.
+
         if(ran2(iseed) <= fresnel(I, N, n1, n2))then
             call reflect(I, N)
+            rflag = .true.
         else
             call refract(I, N, n1/n2)
         end if
@@ -531,68 +509,6 @@ CONTAINS
             return
         end if
     end function fresnel
-
-   
-    ! function fresnel(pdir, n1, n2) result (tir)
-    ! !calculates the fresnel coefficents
-    ! !
-    ! !
-    !     implicit none
-
-    !     real, intent(IN) :: n1, n2, pdir
-    !     real             :: crit, costt, sintt, sint2, cost2, tir, f1, f2
-
-    !     crit = n2/n1
-
-    !     costt = abs(pdir)
-    !     sintt = sqrt(1. - costt * costt)
-
-    !     if(sintt > crit)then
-    !         tir = 1.0
-    !         return
-    !     else
-    !         sint2 = (n1/n2)*sintt
-    !         cost2 = sqrt(1. - sint2 * sint2)
-    !         f1 = abs((n1*costt - n2*cost2) / (n1*costt + n2*cost2))**2
-    !         f2 = abs((n1*cost2 - n2*costt) / (n1*cost2 + n2*costt))**2
-
-    !         tir = 0.5 * (f1 + f2)
-    !     if(isnan(tir) .or. tir > 1. .or. tir < 0.)print*,'TIR: ', tir!, f1, f2, cost,sint,cost,sint2
-    !         return
-    !     end if
-   
-    ! end function fresnel
-
-
-    ! function fresnel(pdir, n1, n2) result (tir)
-    ! !calculates the fresnel coefficents
-    ! !
-    ! !
-    !     implicit none
-
-    !     real, intent(IN) :: n1, n2, pdir
-    !     real             :: crit, costt, sintt, sint2, cost2, tir, f1, f2
-
-    !     crit = n2/n1
-
-    !     costt = abs(pdir)
-    !     sintt = sqrt(1. - costt * costt)
-
-    !     if(sintt > crit)then
-    !         tir = 1.0
-    !         return
-    !     else
-    !         sint2 = (n1/n2)*sintt
-    !         cost2 = sqrt(1. - sint2 * sint2)
-    !         f1 = abs((n1*costt - n2*cost2) / (n1*costt + n2*cost2))**2
-    !         f2 = abs((n1*cost2 - n2*costt) / (n1*cost2 + n2*costt))**2
-
-    !         tir = 0.5 * (f1 + f2)
-    !     if(isnan(tir) .or. tir > 1. .or. tir < 0.)print*,'TIR: ', tir!, f1, f2, cost,sint,cost,sint2
-    !         return
-    !     end if
-   
-    ! end function fresnel
 
 
     subroutine taufind1(xcell,ycell,zcell,delta,taurun)

@@ -18,16 +18,16 @@ CONTAINS
    real                   :: ran2
 
 
-      zp = 0.3!zmax*(2.*ran2(iseed)-1.)
-      xp = 0.!xmax-delta!*(2.*ran2(iseed)-1.)
-      yp = 0.!ymax*(2.*ran2(iseed)-1.)
+      zp = zmax - delta!3!zmax*(2.*ran2(iseed)-1.)
+      xp = xmax*(2.*ran2(iseed)-1.)
+      yp = ymax*(2.*ran2(iseed)-1.)
       
-      phi  = 0.!twopi*ran2(iseed)!3.*pi/2.
+      phi  = twopi*ran2(iseed)!3.*pi/2.
       cosp = cos(phi)
       sinp = sin(phi)         
       ! sint = 1.
-      cost = cos(3.*pi/4.)!2.*ran2(iseed)-1.
-      sint = sin(3.*pi/4.)!sqrt(1.-cost*cost)
+      cost = -1.!2.*ran2(iseed)-1.
+      sint = 0.!sqrt(1.-cost*cost)
  
    
    nxp = sint * cosp  

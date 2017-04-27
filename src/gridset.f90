@@ -40,6 +40,8 @@ CONTAINS
     end do
 
    call init_opt1
+   refrac = 1.38
+   refrac(:,:,nzg+1) = 1.0
    !**************  Loop through x, y, and z to set up grid density and refractive index grid.  ****
     do i = 1, nxg
         x = xface(i) - xmax + xmax/nxg
@@ -49,11 +51,11 @@ CONTAINS
                 z = zface(k) - zmax + zmax/nzg
 !***********Call density setup subroutine 
 
-                    if(x >= -.2 .and. x <= 0.2 .and. y >= -0.2 .and. y <= .2 .and. z >= -0.2 .and. z <= 0.2)then
-                        refrac(i,j,k) = 1.38
-                    else
-                        refrac(i,j,k) = 1.0
-                    end if
+                    ! if(x >= -.2 .and. x <= 0.2 .and. y >= -0.2 .and. y <= .2 .and. z >= -0.2 .and. z <= 0.2)then
+                    !     refrac(i,j,k) = 1.0
+                    ! else
+                    !     refrac(i,j,k) = 1.0
+                    ! end if
                         ! albedo_a(i,j,k,1) = albedo
                         ! if(x >= -.2 .and. x <= 0.2 .and. y >= -0.2 .and. y <= .2 .and. z >= -0.2 .and. z <= 0.2)then
                         !     refrac(i,j,k) = 1.5
