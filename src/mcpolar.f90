@@ -35,7 +35,6 @@ double precision  :: nscatt
 real              :: ran, delta, ran2, phiim, thetaim
 
 integer           :: error
-character(len=3)  :: fn
 
 call zarray
 
@@ -63,7 +62,7 @@ open(10,file=trim(resdir)//'input.params',status='old')
    read(10,*) zmax
    close(10)
 
-   ! zmax = depth
+   zmax = depth
 
 ! set seed for rnd generator. id to change seed for each process
 iseed=-456123456+id
@@ -82,7 +81,7 @@ if(id == 0)then
 end if
 
 !***** Set up density grid *******************************************
-call gridset(id, depth)
+call gridset(id)
 
 !***** Set small distance for use in optical depth integration routines 
 !***** for roundoff effects when crossing cell walls
@@ -92,7 +91,7 @@ call MPI_Barrier(MPI_COMM_WORLD, error)
 print*,'Photons now running on core: ',id
 do j=1,nphotons
 
-   call init_opt1
+   ! call init_opt1
    wavelength = 0
    material = 1
 
@@ -114,22 +113,26 @@ do j=1,nphotons
 !******** Photon scatters in grid until it exits (tflag=TRUE) 
    do while(tflag.eqv..FALSE.)
       ran = ran2(iseed)
-      if(ran < albedo)then!interacts with tissue
+      ! if(material == 3)print*,material
+      ! print*,wavelength,material
+      if(ran < albedo_a(xcell,ycell,zcell,wavelength+material))then!interacts with tissue
             call stokes(iseed)
             nscatt = nscatt + 1
          else
-            ! if(material==3)then
-               ! wavelength = 1
-               ! hgg = 0.
-               ! call stokes(iseed)
-               ! hgg = .9
-            ! else
+            if(material==3 .and. refrac(xcell,ycell,zcell) == 1.8)then
+                ! print*,wavelength,xcell,ycell,zcell
+                wavelength = 1
+                ! call stokes(iseed)
+                cost = 1.!2.*ran2(iseed)-1.
+                sint = 0.!sqrt(1.-cost**2)
+                phi  = 0.!twopi * ran2(iseed)
+                cosp = cos(phi)
+                sinp = sin(phi) 
+            else
                tflag=.true.
                exit
-            ! end if
+            end if
       end if
-
-
 
 !************ Find next scattering location
         call tauint1(xcell,ycell,zcell,tflag,iseed,delta)

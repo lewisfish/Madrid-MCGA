@@ -3,86 +3,104 @@ MODULE ch_opt
 implicit none
 
 private
-public :: init_opt1, init_opt2, init_opt3, init_opt4
+public :: init_opt1, init_opt2, init_opt3, init_opt4, init_jacq
 
 CONTAINS
    
-   subroutine init_opt1
+   subroutine init_opt1()
    !
-   !  subroutine to set tissue optical properties 808nm
+   !  subroutine to set 809nm TISSUE optical properties
    !
-      use opt_prop
+      use opt_prop, only : hgg, g2, mua, mus, kappa, albedo
       
       implicit none
 
-      ! hgg = 0.9
-      ! g2  = hgg**2
-      ! mua = .1
-      ! mus = 174.5!. / (1. - hgg)
-
-      hgg = 0.86
-      g2 = hgg*2
-      mua = 0.23
-      mus = 21. / (1. - hgg)
+      hgg = 0.9
+      g2  = hgg**2
+      mua = 0.34 !from mua.dat
+      mus = 13.453210015633305 / (1. - hgg) !from 96 jacques data + jacques formula
 
       kappa  = mus + mua 
       albedo = mus / kappa
 
    end subroutine init_opt1
    
-   subroutine init_opt2
+
+   subroutine init_opt2()
    !
-   !  subroutine to set tissue optical properties 900nm
+   !  subroutine to set 1064nm TISSUE optical properties
    !
-      use opt_prop
+      use opt_prop, only : hgg, g2, mua, mus, kappa, albedo
 
       implicit none
 
       hgg = 0.9
       g2  = hgg**2
-      mua = .15
-      mus = 180.65 !/ (1. - hgg)
+      mua = 0.3 !https://en.wikipedia.org/wiki/Near-infrared_window_in_biological_tissue
+      mus = 9.488560164729575 / (1. - hgg) !from 96 jacques data + jacques formula
 
-      kappa  = mus + mua !+ 5.3e-3
+      kappa  = mus + mua
       albedo = mus / kappa
 
    end subroutine init_opt2
    
-   subroutine init_opt3
+
+   subroutine init_opt3()
    !
-   !  subroutine to set tissue optical properties 1064nm
+   !  subroutine to set 809nm CRYSTAL optical properties
    !
-      use opt_prop
+      use opt_prop, only : hgg, g2, mua, mus, kappa, albedo
 
       implicit none
 
       hgg = 0.9
       g2  = hgg**2
-      mua = .13
-      mus = 9.49 / (1. - hgg) !from s.jacques paper formula using jacques 1996 data
+      mua = 10.0 !from northrop grumman
+      mus =  0.001 !from Scattering in Polycrystalline Nd:YAG Laser Ikesue et al. 1998
 
-      kappa  = mus + mua !+ 5.3e-3
+      kappa  = mus + mua
       albedo = mus / kappa
 
    end subroutine init_opt3
    
-   subroutine init_opt4
+
+   subroutine init_opt4()
    !
-   !  subroutine to set tissue optical properties 808nm
+   !  subroutine to set 1064nm CRYSTAL optical properties
    !
-      use opt_prop
+      use opt_prop, only : hgg, g2, mua, mus, kappa, albedo
       
       implicit none
 
       hgg = 0.7
       g2  = hgg**2
-      mua = .23
-      mus = 21. / (1. - hgg)
+      mua = 0.001 !from http://users.unimi.it/aqm/wp-content/uploads/YAGBrochure.pdf 
+      ! Scattering effect and laser performance for the Nd:YAG transparent ceramics  Li et al 2011
+      mus = 0.004 !Scattering effect and laser performance for the Nd:YAG transparent ceramics  Li et al 2011
 
       kappa  = mus + mua 
       albedo = mus / kappa
 
    end subroutine init_opt4
+
+
+   subroutine init_jacq()
+   !
+   !  subroutine to set tissue optical properties to jacques 1993 paper. 630nm rat tissue
+   !
+      use opt_prop, only : hgg, g2, mua, mus, kappa, albedo
+      
+      implicit none
+
+      hgg = 0.86
+      g2  = hgg*2
+      mua = 0.23
+      mus = 21. / (1. - hgg)
+
+      kappa  = mus + mua 
+      albedo = mus / kappa
+
+   end subroutine init_jacq
 
 
    subroutine sample(array, size_of, cdf, wave, iseed)

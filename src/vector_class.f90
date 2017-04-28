@@ -4,36 +4,32 @@ Module vector_class
         real :: x, y, z
         contains
 
-        procedure :: magnitude => magnitude_fn
-        procedure :: print => print_sub
+        procedure :: magnitude       => magnitude_fn
+        procedure :: print           => print_sub
+        generic   :: operator(.dot.) => vec_dot
+        generic   :: operator(/)     => vec_div_scal
+        generic   :: operator(*)     => vec_mult_vec, vec_mult_scal
+        generic   :: operator(+)     => vec_add_vec, vec_add_scal, scal_add_vec
+        generic   :: operator(-)     => vec_minus_vec
+
+        procedure, pass(a), private :: vec_dot
+
+        procedure, pass(a), private :: vec_div_scal
+
+        procedure, pass(a), private :: vec_mult_vec
+        procedure, pass(a), private :: vec_mult_scal
+        procedure, pass(b), private :: scal_mult_vec
+
+        procedure, pass(a), private :: vec_add_vec
+        procedure, pass(a), private :: vec_add_scal
+        procedure, pass(b), private :: scal_add_vec
+
+        procedure, pass(a), private :: vec_minus_vec
+
     end type vector
 
-    interface operator (.dot.)
-        module procedure vec_dot
-    end interface
-
-    interface operator (/)
-        module procedure vec_div_scal
-    end interface
-
-    interface operator (*)
-        module procedure vec_mult_vec
-        module procedure vec_mult_scal
-        module procedure scal_mult_vec
-    end interface
-
-    interface operator(+)
-        module procedure vec_add_vec
-        module procedure vec_add_scal
-        module procedure scal_add_vec
-    end interface
-
-    interface operator(-)
-        module procedure vec_minus_vec
-    end interface
-
     private
-    public :: magnitude, vector, print, operator(.dot.), operator(/), operator(*), operator(+), operator(-)
+    public :: magnitude, vector, print
 
     contains
 
@@ -41,7 +37,8 @@ Module vector_class
 
             implicit none
 
-            type(vector), intent(IN) :: a, b
+            class(vector), intent(IN) :: a
+            type(vector),  intent(IN) :: b
 
             vec_minus_vec = vector(a%x - b%x, a%y - b%y, a%z - b%z)
 
@@ -52,19 +49,20 @@ Module vector_class
 
             implicit none
 
-            type(vector), intent(IN) :: a
-            real,         intent(IN) :: b
+            class(vector), intent(IN) :: a
+            real,          intent(IN) :: b
 
             vec_add_scal = vector(a%x + b, a%y + b, a%z + b)
 
         end function vec_add_scal
 
+
         type(vector) function scal_add_vec(a, b)
 
             implicit none
 
-            type(vector), intent(IN) :: b
-            real,         intent(IN) :: a
+            class(vector), intent(IN) :: b
+            real,          intent(IN) :: a
 
             scal_add_vec = vector(b%x + a, b%y + a, b%z + a)
 
@@ -75,20 +73,23 @@ Module vector_class
 
             implicit none
 
-            type(vector), intent(IN) :: a, b
+            class(vector), intent(IN) :: a
+            type(vector),  intent(IN) :: b
 
             vec_add_vec = vector(a%x + b%x, a%y + b%y, a%z + b%z)
 
         end function vec_add_vec
 
 
-        real function vec_dot(a, b)
+        elemental function vec_dot(a, b) result (dot)
 
             implicit none
 
-            type(vector), intent(IN) :: a, b
+            class(vector), intent(IN) :: a
+            type(vector),  intent(IN) :: b
+            real :: dot
 
-            vec_dot = a%x * b%x + a%y * b%y + a%z * b%z
+            dot = (a%x * b%x) + (a%y * b%y) + (a%z * b%z)
 
         end function vec_dot
 
@@ -97,7 +98,8 @@ Module vector_class
 
             implicit none
 
-            type(vector), intent(IN) :: a, b
+            class(vector), intent(IN) :: a
+            type(vector),  intent(IN) :: b
 
             vec_mult_vec = vector(a%x * b%x, a%y * b%y, a%z * b%z)
 
@@ -108,8 +110,8 @@ Module vector_class
 
             implicit none
 
-            type(vector), intent(IN) :: a
-            real,         intent(IN) :: b
+            class(vector), intent(IN) :: a
+            real,          intent(IN) :: b
 
             vec_mult_scal = vector(a%x * b, a%y * b, a%z * b)
 
@@ -120,8 +122,8 @@ Module vector_class
 
             implicit none
 
-            type(vector), intent(IN) :: b
-            real,         intent(IN) :: a
+            class(vector), intent(IN) :: b
+            real,          intent(IN) :: a
 
             scal_mult_vec = vector(a * b%x, a * b%y, a * b%z)
 
@@ -132,7 +134,7 @@ Module vector_class
 
             implicit none
 
-            type(vector), intent(IN) :: a
+            class(vector), intent(IN) :: a
             real,         intent(IN) :: b
 
             vec_div_scal = vector(a%x / b, a%y / b, a%z / b)
@@ -153,6 +155,7 @@ Module vector_class
 
         end function magnitude_fn
 
+
         subroutine print_sub(this)
 
             implicit none
@@ -160,6 +163,6 @@ Module vector_class
             class(vector) :: this
 
                 print*,this%x, this%y, this%z
-
+                
         end subroutine
 end Module vector_class

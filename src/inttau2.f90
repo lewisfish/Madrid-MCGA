@@ -13,9 +13,9 @@ CONTAINS
     !
         use constants,   only : xmax, ymax, zmax,nxg, nyg
         use photon_vars, only : xp, yp, zp!, nxp, nyp, nzp!, cost, sint, cosp, sinp, phi
-        use iarray,      only : jmean
+        use iarray,      only : jmean, rhokap
 
-        use opt_prop,    only : kappa
+        use opt_prop,    only : material, wavelength
         use vector_class
    
         implicit none
@@ -46,26 +46,28 @@ CONTAINS
         do
             dir = (/.FALSE., .FALSE., .FALSE./)
             dcell = wall_dist(celli, cellj, cellk, xcur, ycur, zcur, dir)
-            taucell = dcell * kappa!rhokap(celli,cellj,cellk,1)
+            taucell = dcell * rhokap(celli,cellj,cellk,wavelength+material)
 
             if(taurun + taucell < tau)then
                 taurun = taurun + taucell
                 d = d + dcell
-                jmean(celli, cellj, cellk, 1) = jmean(celli, cellj, cellk, 1) + dcell
+    jmean(celli, cellj, cellk, wavelength+material) = jmean(celli, cellj, cellk, wavelength+material) + dcell
 
                 call update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, .TRUE., dir, delta, tflag, iseed, &
                                 tau, taurun)
 
             else
 
-                dcell = (tau - taurun) / kappa!rhokap(celli,cellj,cellk,1)
+                dcell = (tau - taurun) / rhokap(celli,cellj,cellk,wavelength+material)
                 d = d + dcell
-                jmean(celli, cellj, cellk, 1) = jmean(celli, cellj, cellk, 1) + dcell
+    jmean(celli, cellj, cellk, wavelength+material) = jmean(celli, cellj, cellk, wavelength+material) + dcell
 
                 call update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, .FALSE., dir, delta, tflag, iseed, &
                                 tau, taurun)
                 exit
             end if
+            ! print*,wavelength,material
+
             if(celli == -1 .or. cellj == -1 .or. cellk == -1)then
                 if(celli == -1 .or. cellj == -1)then
                     call repeat_bounds(celli, cellj, xcur, ycur, xmax, ymax, nxg, nyg, delta)
@@ -141,12 +143,12 @@ CONTAINS
 
 
     subroutine update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, wall_flag, dir, delta, tflag, iseed, &
-                          tau, taurun, peelflag)
+                          tau, taurun)
     !routine that upates postions of photon and calls fresnel routines if photon leaves current voxel
     !
     !
         use photon_vars, only : nxp, nyp, nzp, phi, cost, sint, cosp, sinp
-        ! use opt_prop,    only : material
+        use opt_prop,    only : material
         use iarray,      only : xface, yface, zface, refrac
         use constants,   only : nzg
         use vector_class
@@ -158,7 +160,6 @@ CONTAINS
       integer, intent(INOUT) :: celli, cellj, cellk, iseed
       logical, intent(IN)    :: wall_flag, dir(:)
       logical, intent(INOUT) :: tflag 
-      logical, optional, intent(IN) :: peelflag
       
       type(vector) :: norm, incd
       real         :: n1, n2, ran2
@@ -221,22 +222,6 @@ CONTAINS
       end if
 
 
-    !  if(present(peelflag))then
-    !     if(.not.peelflag)then
-    !         if(n1 == 1.38)then
-    !         material = 3
-    !         else
-    !         material = 1
-    !         end if
-    !     end if
-    ! else
-    !     if(n1 == 1.38)then
-    !         material = 3
-    !         else
-    !         material = 1
-    !     end if
-    ! end if
-
       if(wall_flag)then
          call update_voxels(xcur, ycur, zcur, celli, cellj, cellk)
          if(celli == -1 .or. cellj == -1)then
@@ -245,7 +230,13 @@ CONTAINS
         end if
         n2 = refrac(celli,cellj,cellk)
       end if
-      
+
+      if(n1 == 1.38)then
+            material = 1
+      else
+            material = 3
+      end if
+
       if(nzp .gt. 0. .and. cellk == -1)then
         cellk = nzg+1
         n2 = refrac(celli,cellj,cellk)
@@ -552,7 +543,7 @@ CONTAINS
             taurun = taurun + taucell
             d = d + dcell
             call update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, .TRUE., dir, delta, tmp, iseed, &
-                            tau, taurun, .true.)
+                            tau, taurun)
 
             if(celli == -1 .or. cellj == -1 .or. cellk == -1)then
                 exit
@@ -602,7 +593,7 @@ CONTAINS
 
 
         !over 4 pi for 1st fluro photon
-        prob = exp(-tau1)
+        prob = exp(-tau3)
 
         bin_wid = 4.*xmax/Nbins
 
@@ -611,7 +602,7 @@ CONTAINS
 
         hgfact=(1.-g2)/(4.*pi*(1.+g2-2.*hgg*cosa)**(1.5))
 
-        prob = exp(-tau3) * hgfact
+        prob =  hgfact
 
         ! if(material==3)print*,material+wavelength
         image(binx, biny,material + wavelength) = image(binx, biny, material + wavelength) + prob

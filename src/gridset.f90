@@ -7,7 +7,7 @@ MODULE gridset_mod
     public :: gridset
 
     contains
-        subroutine gridset(id, depth)
+        subroutine gridset(id)
 
             use constants, only : nxg, nyg, nzg, xmax, ymax, zmax
             use iarray, only    : rhokap,xface,yface,zface, rhokap,albedo_a, refrac
@@ -17,7 +17,6 @@ MODULE gridset_mod
             implicit none
 
             integer, intent(IN) :: id
-            real,    intent(IN) :: depth
 
             integer             :: i, j, k
             real                :: x, y, z, taueq1, taupole1, taueq2, taupole2
@@ -41,8 +40,9 @@ MODULE gridset_mod
             end do
 
             call init_opt1
-            refrac = 1.38
+            ! refrac = 1.38
             refrac(:,:,nzg+1) = 1.0
+
             !set up optical properties grid 
             do i = 1, nxg
                 x = xface(i) - xmax + xmax/nxg
@@ -51,28 +51,27 @@ MODULE gridset_mod
                     do k = 1, nzg
                         z = zface(k) - zmax + zmax/nzg
 
-            ! if(x >= -.2 .and. x <= 0.2 .and. y >= -0.2 .and. y <= .2 .and. z >= -0.2 .and. z <= 0.2)then
-            !     refrac(i,j,k) = 1.0
-            ! else
-            !     refrac(i,j,k) = 1.0
-            ! end if
-            ! albedo_a(i,j,k,1) = albedo
-            ! if(x >= -.2 .and. x <= 0.2 .and. y >= -0.2 .and. y <= .2 .and. z >= -0.2 .and. z <= 0.2)then
-            !     refrac(i,j,k) = 1.5
-            ! if(x >= -.3 .and. x <= 0.3 .and. y >= -0.5 .and. y <= .5 .and. z >= -zmax .and. z <= (-zmax+.3))then
-            !     refrac(i,j,k)=1.38
-            !     albedo_a(i,j,k,3) = 0.001                   !809nm crystal
-            !     rhokap(i,j,k,3)   = 6.
+                        if(x >= -.3 .and. x <= 0.3 .and. y >= -0.5 .and. y <= .5 .and. z >= -zmax .and. z <= (-zmax+.3))then
+                            refrac(i,j,k) = 1.8                        !crystal
 
-            !     albedo_a(i,j,k,4) = 0.001                   !1064nm crystal  mus = 0.001 cm-1, mua = 0.004 cm-1
-            !     rhokap(i,j,k,4)   = 0.02       !900nm crystal   mus = 0.001 cm-1, mua = 0.02 cm-1
-            ! else
-            !     call init_opt1
-            !     rhokap(i,j,k,1)   = kappa        
-            !     albedo_a(i,j,k,1) = albedo
-            ! else
-            !     refrac(i,j,k) = 1.0
-            ! end if
+                            call init_opt3                               !809 CRYSTAL         
+                            albedo_a(i,j,k,3) = albedo
+                            rhokap(i,j,k,3)   = kappa
+
+                            call init_opt4                               !1064 CRYSTAL         
+                            albedo_a(i,j,k,4) = albedo
+                            rhokap(i,j,k,4)   = kappa
+                        else
+                            refrac(i,j,k) = 1.38                         !tissue
+
+                            call init_opt1                               !809 TISSUE              
+                            rhokap(i,j,k,1)   = kappa        
+                            albedo_a(i,j,k,1) = albedo
+
+                            call init_opt2                               !1064 TISSUE         
+                            rhokap(i,j,k,2)   = kappa        
+                            albedo_a(i,j,k,2) = albedo
+                        end if
                     end do
                 end do
             end do
@@ -96,5 +95,23 @@ MODULE gridset_mod
             if(id == 0)then
                 print'(A,F9.5,A,F9.5)',' taueq1 = ',taueq1,'  taupole1 = ',taupole1
             end if
+
+            ! if(id == 0)then
+            !     inquire(iolength=i)refrac
+            !     open(newunit=j,file='refrac.dat',access='direct',form='unformatted',status='replace',recl=i)
+            !     write(j,rec=1)refrac
+            !     close(j)
+
+            !     inquire(iolength=i)rhokap
+            !     open(newunit=j,file='rhokap.dat',access='direct',form='unformatted',status='replace',recl=i)
+            !     write(j,rec=1)rhokap
+            !     close(j)
+
+            !     inquire(iolength=i)albedo_a
+            !     open(newunit=j,file='albedo.dat',access='direct',form='unformatted',status='replace',recl=i)
+            !     write(j,rec=1)albedo_a
+            !     close(j)
+            ! end if
+
         end subroutine gridset
 end MODULE gridset_mod
