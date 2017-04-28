@@ -8,7 +8,7 @@ Module vector_class
         procedure :: print           => print_sub
         generic   :: operator(.dot.) => vec_dot
         generic   :: operator(/)     => vec_div_scal
-        generic   :: operator(*)     => vec_mult_vec, vec_mult_scal
+        generic   :: operator(*)     => vec_mult_vec, vec_mult_scal, scal_mult_vec
         generic   :: operator(+)     => vec_add_vec, vec_add_scal, scal_add_vec
         generic   :: operator(-)     => vec_minus_vec
 
@@ -163,6 +163,6 @@ Module vector_class
             class(vector) :: this
 
                 print*,this%x, this%y, this%z
-                
+
         end subroutine
 end Module vector_class
