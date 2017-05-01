@@ -98,9 +98,8 @@ else
 end if
 
 
-
-! call MPI_REDUCE(image,imageGLOBAL,size(image,1)*size(image,2)*size(image,3),MPI_DOUBLE_PRECISION,MPI_SUM,0,MPI_COMM_WORLD,error)
-! call MPI_BARRIER(MPI_COMM_WORLD, error)
+call MPI_REDUCE(image,imageGLOBAL,size(image,1)*size(image,2)*size(image,3),MPI_DOUBLE_PRECISION,MPI_SUM,0,MPI_COMM_WORLD,error)
+call MPI_BARRIER(MPI_COMM_WORLD, error)
 
 call MPI_REDUCE(absorb, absorbGLOBAL, nxg*nyg*nzg, MPI_DOUBLE_PRECISION,MPI_SUM,0,MPI_COMM_WORLD,error)
 call MPI_BARRIER(MPI_COMM_WORLD, error)
@@ -118,10 +117,8 @@ end subroutine mcpolar
 
 subroutine emit(nphotons, iseed, delta, nscatt, id,dflag)
 
-    use constants,   only : twopi
     use opt_prop,    only : material, wavelength
-    use photon_vars, only : cost, sint, cosp, sinp, phi
-    use iarray,      only : albedo_a, refrac
+    use iarray,      only : albedo_a
     use sourceph_mod
     use inttau2
     use stokes_mod
@@ -140,7 +137,6 @@ subroutine emit(nphotons, iseed, delta, nscatt, id,dflag)
 
     do j = 1, nphotons
 
-        ! call init_opt1
         wavelength = 0
         material = 1
 
@@ -150,46 +146,22 @@ subroutine emit(nphotons, iseed, delta, nscatt, id,dflag)
             print *, j,' scattered photons completed on core: ',id
         end if
 
-        !***** Release photon from point source *******************************
         call sourceph(xcell,ycell,zcell,iseed,delta)
 
-        !****** Find scattering location
 
         call tauint1(xcell,ycell,zcell,tflag,iseed,delta,dflag)
-        ! if(wavelength /= 0)then
-        ! call peeling(xcell,ycell,zcell,delta)
-        ! end if
-        !******** Photon scatters in grid until it exits (tflag=TRUE) 
+
         do while(tflag.eqv..FALSE.)
             ran = ran2(iseed)
-            ! if(material == 3)print*,material
-            ! print*,wavelength,material
-            if(ran < albedo_a(xcell,ycell,zcell,wavelength+material))then!interacts with tissue
+            if(ran < albedo_a(xcell,ycell,zcell,wavelength+material))then
                 call stokes(iseed)
                 nscatt = nscatt + 1
             else
-                if(material==3 .and. refrac(xcell,ycell,zcell) == 1.8)then
-                ! print*,wavelength,xcell,ycell,zcell
-                wavelength = 1
-                ! call stokes(iseed)
-                cost = 2.*ran2(iseed)-1.
-                sint = sqrt(1.-cost**2)
-                phi  = twopi * ran2(iseed)
-                cosp = cos(phi)
-                sinp = sin(phi) 
-                else
-                    tflag=.true.
-                    exit
-                end if
+                tflag=.true.
             end if
 
-            !************ Find next scattering location
             call tauint1(xcell,ycell,zcell,tflag,iseed,delta,dflag)
 
-            ! if(wavelength /=0 .and. .not. tflag)then
-            ! if(material==3)print*,material,tflag
-            ! call peeling(xcell,ycell,zcell,delta)
-            ! end if
         end do
     end do      ! end loop over nph photons
 end subroutine emit
@@ -197,10 +169,9 @@ end subroutine emit
 
 subroutine diffuse(nphotons, iseed, delta, nscatt, id, dflag)
 
-    use constants,   only : nxg, nyg, nzg, fileplace, twopi
+    use constants,   only : nxg, nyg, nzg, fileplace
     use opt_prop,    only : wavelength, material
-    use photon_vars, only : cost, sint, cosp, sinp, phi
-    use iarray,      only : absorb, albedo_a, refrac
+    use iarray,      only : absorb, albedo_a
     use inttau2
     use stokes_mod
     use sourceph_mod
@@ -241,9 +212,8 @@ subroutine diffuse(nphotons, iseed, delta, nscatt, id, dflag)
                 do p = 1, nph
                     jcount = jcount + 1
 
-                    ! call init_opt1
-                    wavelength = 0
-                    material = 1
+                    wavelength = 1
+                    material = 3
 
                     tflag = .FALSE.
 
@@ -254,6 +224,7 @@ subroutine diffuse(nphotons, iseed, delta, nscatt, id, dflag)
                     call source_diffuse(xcell, ycell, zcell, i, j, k, iseed)
 
                     call tauint1(xcell,ycell,zcell,tflag,iseed,delta,dflag)
+                    call peeling(xcell,ycell,zcell,delta,.true.)
 
                     do while(tflag .eqv. .FALSE.)
                         ran = ran2(iseed)
@@ -261,19 +232,11 @@ subroutine diffuse(nphotons, iseed, delta, nscatt, id, dflag)
                             call stokes(iseed)
                             nscatt = nscatt + 1
                         else
-                            if(material==3 .and. refrac(xcell,ycell,zcell) == 1.8)then
-                            wavelength = 1
-                            cost = 2.*ran2(iseed)-1.
-                            sint = sqrt(1.-cost**2)
-                            phi  = twopi * ran2(iseed)
-                            cosp = cos(phi)
-                            sinp = sin(phi) 
-                            else
-                                tflag=.true.
-                                exit
-                            end if
+                            tflag=.true.
+                            exit
                         end if
                         call tauint1(xcell,ycell,zcell,tflag,iseed,delta,dflag)
+                        call peeling(xcell,ycell,zcell,delta,.false.)
                     end do
                 end do
             end do

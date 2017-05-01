@@ -52,7 +52,7 @@ MODULE gridset_mod
                         z = zface(k) - zmax + zmax/nzg
 
                         if(x >= -.3 .and. x <= 0.3 .and. y >= -0.5 .and. y <= .5 .and. z >= -zmax .and. z <= (-zmax+.3))then
-                            refrac(i,j,k) = 1.8                        !crystal
+                            refrac(i,j,k) = 1.5                        !crystal
 
                             call init_opt3                               !809 CRYSTAL         
                             albedo_a(i,j,k,3) = albedo

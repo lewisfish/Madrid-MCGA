@@ -73,7 +73,6 @@ CONTAINS
                                 tau, taurun)
                 exit
             end if
-            ! print*,wavelength,material
 
             if(celli == -1 .or. cellj == -1 .or. cellk == -1)then
                 if(celli == -1 .or. cellj == -1)then
@@ -231,7 +230,7 @@ CONTAINS
 
       if(wall_flag)then
          call update_voxels(xcur, ycur, zcur, celli, cellj, cellk)
-         if(celli == -1 .or. cellj == -1)then
+         if(celli == -1 .or. cellj == -1 .or. cellk == -1)then
             tflag = .true.
             return
         end if
@@ -559,7 +558,7 @@ CONTAINS
     end subroutine taufind1
    
 
-    subroutine peeling(xcell,ycell,zcell,delta)
+    subroutine peeling(xcell,ycell,zcell,delta,flag)
    
         use iarray,      only : image
         use constants,   only : PI, nbins, xmax, ymax, zmax, v, costim, sintim, cospim, sinpim
@@ -572,6 +571,7 @@ CONTAINS
 
         real,    intent(IN)    :: delta
         integer, intent(INOUT) :: xcell, ycell, zcell
+        logical, intent(IN)    :: flag
         real                   :: cosa, tau1, prob, xim, yim, bin_wid,xpold,ypold
         real                   :: nxpold, nypold, nzpold, hgfact,zpold, tau3
         integer                :: binx, biny, xcellold, ycellold, zcellold
@@ -607,9 +607,14 @@ CONTAINS
         binx = floor(xim/bin_wid)
         biny = floor(yim/bin_wid)
 
-        hgfact=(1.-g2)/(4.*pi*(1.+g2-2.*hgg*cosa)**(1.5))
+        if(flag)then
+            hgfact = 1./(4.*pi)
+        else
+            hgfact = (1.-g2) / ((1.+g2-2.*hgg*cosa)**(1.5))/(4.*pi)
+        end if
 
-        prob =  hgfact
+        ! print*,prob*hgfact,prob,hgfact
+        prob = prob * hgfact
 
         ! if(material==3)print*,material+wavelength
         image(binx, biny,material + wavelength) = image(binx, biny, material + wavelength) + prob
