@@ -22,7 +22,8 @@ program main
 
     depth = .5 !depth = zmax
     do i = 1, 1
-        call mcpolar(depth, id, numproc)
+        ! call mcpolar(depth, id, numproc, .false.)
+        call mcpolar(depth, id, numproc, .true.)
         depth = depth - 0.1
     end do
 

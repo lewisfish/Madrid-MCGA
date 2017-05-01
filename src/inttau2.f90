@@ -7,13 +7,13 @@ module inttau2
 
 CONTAINS
 
-    subroutine tauint1(xcell,ycell,zcell,tflag,iseed,delta)
+    subroutine tauint1(xcell,ycell,zcell,tflag,iseed,delta, dflag)
     !optical depth integration subroutine
     !
     !
         use constants,   only : xmax, ymax, zmax,nxg, nyg
-        use photon_vars, only : xp, yp, zp!, nxp, nyp, nzp!, cost, sint, cosp, sinp, phi
-        use iarray,      only : jmean, rhokap
+        use photon_vars, only : xp, yp, zp
+        use iarray,      only : jmean, rhokap, absorb
 
         use opt_prop,    only : material, wavelength
         use vector_class
@@ -23,8 +23,8 @@ CONTAINS
         real,    intent(IN)    :: delta
         integer, intent(INOUT) :: xcell, ycell, zcell, iseed
         logical, intent(INOUT) :: tflag
+        logical, intent(IN)    :: dflag
 
-        ! type(vector)           :: incd, norm
         real                   :: tau, taurun, taucell, xcur, ycur, zcur, d, dcell, ran2
         integer                :: celli, cellj, cellk
         logical                :: dir(3)
@@ -51,16 +51,23 @@ CONTAINS
             if(taurun + taucell < tau)then
                 taurun = taurun + taucell
                 d = d + dcell
+
     jmean(celli, cellj, cellk, wavelength+material) = jmean(celli, cellj, cellk, wavelength+material) + dcell
+                if(material+wavelength == 3 .and. .not. dflag)then
+            absorb(celli, cellj, cellk) = absorb(celli, cellj, cellk) + dcell*rhokap(celli,cellj,cellk,3)
+                end if
 
                 call update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, .TRUE., dir, delta, tflag, iseed, &
                                 tau, taurun)
-
             else
 
                 dcell = (tau - taurun) / rhokap(celli,cellj,cellk,wavelength+material)
                 d = d + dcell
+
     jmean(celli, cellj, cellk, wavelength+material) = jmean(celli, cellj, cellk, wavelength+material) + dcell
+                if(material+wavelength == 3 .and. .not. dflag)then
+            absorb(celli, cellj, cellk) = absorb(celli, cellj, cellk) + dcell*rhokap(celli,cellj,cellk,3)
+                end if
 
                 call update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, .FALSE., dir, delta, tflag, iseed, &
                                 tau, taurun)

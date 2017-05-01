@@ -10,5 +10,6 @@ MODULE iarray
     real, allocatable :: rhokap(:,:,:,:), albedo_a(:,:,:,:)
     real, allocatable :: image(:,:,:), imageGLOBAL(:,:,:)
     real, allocatable :: jmean(:,:,:,:), jmeanGLOBAL(:,:,:,:)
+    real, allocatable :: absorb(:,:,:), absorbGLOBAL(:,:,:)
 
 end MODULE iarray

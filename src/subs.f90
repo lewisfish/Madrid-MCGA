@@ -81,6 +81,8 @@ MODULE subs
             imageGLOBAL = 0.
             jmean = 0.
             jmeanGLOBAL = 0.
+            absorb = 0.
+            absorbGLOBAL = 0.
 
         end subroutine zarray
 
@@ -99,6 +101,7 @@ MODULE subs
             allocate(image(-((Nbins-1)/2):((Nbins-1)/2), -((Nbins-1)/2):((Nbins-1)/2), 4), &
             imageGLOBAL(-((Nbins-1)/2):((Nbins-1)/2), -((Nbins-1)/2):((Nbins-1)/2),4))
             allocate(jmean(nxg,nyg,nzg,4), jmeanGLOBAL(nxg,nyg,nzg,4))
+            allocate(absorb(nxg, nyg, nzg), absorbGLOBAL(nxg, nyg, nzg))
 
         end subroutine alloc_array
 end MODULE subs
