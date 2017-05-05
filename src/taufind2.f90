@@ -3,7 +3,7 @@ module taufind2
    contains
 subroutine tau2(xcell, ycell, zcell, delta, taurun)
 
-      use iarray,      only : rhokap, xface, yface, zface
+      use iarray,      only : rhokap, xface, yface, zface, refrac
       use photon_vars, only : xp, yp, zp, nxp, nyp, nzp
       use constants,   only : xmax, ymax, zmax, nxg, nyg, nzg
       use opt_prop,    only : wavelength, material
@@ -15,7 +15,7 @@ subroutine tau2(xcell, ycell, zcell, delta, taurun)
       real,    intent(OUT) :: taurun
  
       integer :: celli,cellj,cellk
-      real :: xcur,ycur,zcur,dx,dy,dz,d,dcell
+      real :: xcur,ycur,zcur,dx,dy,dz,d,dcell,n1
       real :: smax,dsx,dsy,dsz,taucell,tau1
 
 
@@ -72,6 +72,7 @@ subroutine tau2(xcell, ycell, zcell, delta, taurun)
 !***** optical depth to next cell wall is 
 !***** taucell =  (distance to cell)*(opacity of current cell)
 
+      n1 = refrac(celli,cellj,cellk)
 
 !***** find distance to next x, y, and z cell walls.  
 !***** note that dx is not the x-distance, but the actual distance along 
@@ -129,6 +130,12 @@ subroutine tau2(xcell, ycell, zcell, delta, taurun)
          elseif(nzp.eq.0.) then
             dz = 1.e2*zmax
          endif
+
+         if(n1 == 1.38)then
+               material = 1
+         else
+               material = 3
+         end if
 
 !***** distances are only zero if photon is on cell wall.  if it is 
 !***** on cell wall then set to arbitrary large distance, since we will

@@ -36,7 +36,7 @@ CONTAINS
 
       hgg = 0.9
       g2  = hgg**2
-      mua = 0.3 !https://en.wikipedia.org/wiki/Near-infrared_window_in_biological_tissue
+      mua = 5.7 !steve jacques omlc webpage  !https://en.wikipedia.org/wiki/Near-infrared_window_in_biological_tissue
       mus = 9.488560164729575 / (1. - hgg) !from 96 jacques data + jacques formula
 
       kappa  = mus + mua

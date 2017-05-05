@@ -31,7 +31,7 @@ real,    intent(IN) :: depth
 logical, intent(IN) :: dflag
 
 integer           :: nphotons, iseed
-double precision  :: nscatt
+double precision  :: nscatt, nscattGLOBAL
 real              :: delta, phiim, thetaim
 
 integer           :: error
@@ -77,7 +77,7 @@ call init_opt1
 
 if(id == 0)then
    print*, ''      
-   print*,'# of photons to run',nphotons*numproc
+   print*,'# of photons to run',dble(nphotons)*dble(numproc)
 end if
 
 !***** Set up density grid *******************************************
@@ -107,10 +107,12 @@ call MPI_BARRIER(MPI_COMM_WORLD, error)
 call MPI_REDUCE(jmean, jmeanGLOBAL, nxg*nyg*nzg*4, MPI_DOUBLE_PRECISION,MPI_SUM,0,MPI_COMM_WORLD,error)
 call MPI_BARRIER(MPI_COMM_WORLD, error)
 
+call MPI_REDUCE(nscatt, nscattGLOBAL, 1, MPI_DOUBLE_PRECISION,MPI_SUM,0,MPI_COMM_WORLD,error)
+call MPI_BARRIER(MPI_COMM_WORLD, error)
 
 if(id == 0)then
    call writer(nphotons,numproc,depth,dflag)
-   print*,'write done'
+   print*,'write done',nscattGLOBAL/(numproc*nphotons)
 end if
 end subroutine mcpolar
 
@@ -142,7 +144,7 @@ subroutine emit(nphotons, iseed, delta, nscatt, id,dflag)
 
         tflag = .FALSE.
 
-        if(mod(j,10000) == 0)then
+        if(mod(j,100000) == 0)then
             print *, j,' scattered photons completed on core: ',id
         end if
 
@@ -184,12 +186,12 @@ subroutine diffuse(nphotons, iseed, delta, nscatt, id, dflag)
     real,    intent(INOUT) :: nscatt
     logical, intent(IN)    :: dflag
 
-    integer :: i, j, k, p, nph, jcount, xcell, ycell, zcell, u
+    integer :: i, j, k, p, nph, jcount, xcell, ycell, zcell, u, ncount
     real :: tmp, diff, tot, ran2, ran
     logical :: tflag
 
     jcount = 0
-
+    ncount = 0
     inquire(iolength=i)absorb
     open(newunit=u, file=trim(fileplace)//'jmean/absorb.dat',status='old',form='unformatted',access='direct',recl=i)
     read(u,rec=1)absorb
@@ -201,31 +203,34 @@ subroutine diffuse(nphotons, iseed, delta, nscatt, id, dflag)
     do i = 1, nxg
         do j = 1, nyg
             do k = 1, nzg
-                tmp = nphotons * absorb(i,j,k)/tot
+                tmp = dble(nphotons) * absorb(i,j,k)/dble(tot)
                 diff = tmp - int(tmp)
                 if(ran2(iseed) < diff .and. diff > 0)then
                     nph = int(tmp) + 1
                 else
                     nph = int(tmp)
                 end if
-
+                ncount = ncount + nph
                 do p = 1, nph
                     jcount = jcount + 1
-
                     wavelength = 1
                     material = 3
 
                     tflag = .FALSE.
 
-                    if(mod(jcount,10000) == 0)then
+                    if(mod(jcount,100000) == 0)then
                         print *, jcount,' scattered photons completed on core: ',id
                     end if
 
                     call source_diffuse(xcell, ycell, zcell, i, j, k, iseed)
-
-                    call tauint1(xcell,ycell,zcell,tflag,iseed,delta,dflag)
                     call peeling(xcell,ycell,zcell,delta,.true.)
 
+                    call tauint1(xcell,ycell,zcell,tflag,iseed,delta,dflag)
+                    if(.not. tflag)then
+                        call peeling(xcell,ycell,zcell,delta,.false.)
+                    ! else
+                    !     exit
+                    end if
                     do while(tflag .eqv. .FALSE.)
                         ran = ran2(iseed)
                         if(ran < albedo_a(xcell,ycell,zcell,wavelength+material))then!interacts with tissue
@@ -236,12 +241,14 @@ subroutine diffuse(nphotons, iseed, delta, nscatt, id, dflag)
                             exit
                         end if
                         call tauint1(xcell,ycell,zcell,tflag,iseed,delta,dflag)
-                        call peeling(xcell,ycell,zcell,delta,.false.)
+                        if(.not. tflag)then
+                            call peeling(xcell,ycell,zcell,delta,.false.)
+                        end if
                     end do
                 end do
             end do
         end do
     end do
-
+    print*,jcount,ncount
 end subroutine diffuse
 end module MCf

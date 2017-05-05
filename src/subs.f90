@@ -97,7 +97,7 @@ MODULE subs
 
             allocate(xface(nxg+1), yface(nyg+1), zface(nzg+1))
             allocate(rhokap(nxg,nyg,nzg,4), albedo_a(nxg,nyg,nzg,4))
-            allocate(refrac(nxg,nyg,nzg))
+            allocate(refrac(nxg,nyg,nzg+1))
             allocate(image(-((Nbins-1)/2):((Nbins-1)/2), -((Nbins-1)/2):((Nbins-1)/2), 4), &
             imageGLOBAL(-((Nbins-1)/2):((Nbins-1)/2), -((Nbins-1)/2):((Nbins-1)/2),4))
             allocate(jmean(nxg,nyg,nzg,4), jmeanGLOBAL(nxg,nyg,nzg,4))

@@ -39,14 +39,14 @@ CONTAINS
         end do
         close(u)
 
-        open(newunit=u,file=trim(fileplace)//'im/slice-1064.dat',status='replace')
+        open(newunit=u,file=trim(fileplace)//'im/prob-scatt-slice-1064.dat',status='replace')
         do i = -((Nbins-1)/2), ((Nbins-1)/2)
             write(u,*)imageGLOBAL(i,0,2)+imageGLOBAL(i,0,4)
         end do
         
         open(newunit=u,file=trim(fileplace)//'im/plot.gp',status='replace')
         write(u,*) 'set terminal pngcairo size 1920,1080'
-        write(u,*) 'set output "1064-'//trim(fn)//'.png"'
+        write(u,*) 'set output "prob-scatt-1064-'//trim(fn)//'.png"'
         write(u,*) 'p"image-1064-'//trim(fn)//'.dat" matrix w image'
         close(u)
 #ifdef intel
@@ -63,6 +63,13 @@ CONTAINS
         open(newunit=u,file=trim(fileplace)//'jmean/absorb.dat', access='direct',form='unformatted',status='replace',recl=i)
         write(u,rec=1)absorbGLOBAL
         close(u)
+
+        ! inquire(iolength=i)jmeanGLOBAL
+        ! jmeanGLOBAL = jmeanGLOBAL * ((2.*xmax)**2./(nphotons*numproc*(2.*xmax/nxg)*(2.*ymax/nyg)*(2.*zmax/nzg)))
+
+        ! open(newunit=u,file=trim(fileplace)//'jmean/jmean.dat', access='direct',form='unformatted',status='replace',recl=i)
+        ! write(u,rec=1)jmeanGLOBAL
+        ! close(u)
         end if
 
 

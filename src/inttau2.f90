@@ -15,8 +15,9 @@ CONTAINS
         use photon_vars, only : xp, yp, zp
         use iarray,      only : jmean, rhokap, absorb
 
-        use opt_prop,    only : material, wavelength
+        use opt_prop,    only : material, wavelength, mua
         use vector_class
+        use ch_opt
    
         implicit none
 
@@ -54,7 +55,8 @@ CONTAINS
 
     jmean(celli, cellj, cellk, wavelength+material) = jmean(celli, cellj, cellk, wavelength+material) + dcell
                 if(material+wavelength == 3 .and. .not. dflag)then
-            absorb(celli, cellj, cellk) = absorb(celli, cellj, cellk) + dcell*rhokap(celli,cellj,cellk,3)
+                    call init_opt3()
+            absorb(celli, cellj, cellk) = absorb(celli, cellj, cellk) + dcell*mua
                 end if
 
                 call update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, .TRUE., dir, delta, tflag, iseed, &
@@ -66,7 +68,8 @@ CONTAINS
 
     jmean(celli, cellj, cellk, wavelength+material) = jmean(celli, cellj, cellk, wavelength+material) + dcell
                 if(material+wavelength == 3 .and. .not. dflag)then
-            absorb(celli, cellj, cellk) = absorb(celli, cellj, cellk) + dcell*rhokap(celli,cellj,cellk,3)
+                    call init_opt3()
+            absorb(celli, cellj, cellk) = absorb(celli, cellj, cellk) + dcell*mua
                 end if
 
                 call update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, .FALSE., dir, delta, tflag, iseed, &
@@ -149,7 +152,7 @@ CONTAINS
 
 
     subroutine update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, wall_flag, dir, delta, tflag, iseed, &
-                          tau, taurun)
+                          tau, taurun, flag)
     !routine that upates postions of photon and calls fresnel routines if photon leaves current voxel
     !
     !
@@ -165,7 +168,8 @@ CONTAINS
       real,    intent(IN)    :: dcell, delta
       integer, intent(INOUT) :: celli, cellj, cellk, iseed
       logical, intent(IN)    :: wall_flag, dir(:)
-      logical, intent(INOUT) :: tflag 
+      logical, intent(INOUT) :: tflag
+      logical, optional      :: flag
       
       type(vector) :: norm, incd
       real         :: n1, n2, ran2
@@ -243,12 +247,14 @@ CONTAINS
             material = 3
       end if
 
+      if(.not. present(flag))then
       if(nzp .gt. 0. .and. cellk == -1)then
         cellk = nzg+1
         n2 = refrac(celli,cellj,cellk)
       end if
 
-        if(n1 /= n2 .and. wall_flag)then
+      if(wall_flag)then
+        if(n1 /= n2)then
             incd = vector(nxp, nyp, nzp)
             incd = incd%magnitude()
             if(iold /= celli)then                           ! x-dir
@@ -285,7 +291,7 @@ CONTAINS
                     elseif(nzp < 0.)then
                         zcur = zface(cellk) + delta
                     end if
-                else
+                elseif(cellk == nzg + 1)then
                     cellk = -1
                     tflag = .true.
                 end if
@@ -297,7 +303,7 @@ CONTAINS
                 nyp = incd%y
                 nzp = incd%z
 
-                phi = atan2(nyp/sint, nxp/sint)
+                phi = atan2(nyp, nxp)
                 sinp = sin(phi)
                 cosp = cos(phi)
 
@@ -307,7 +313,8 @@ CONTAINS
                 taurun = 0.
                 tau = -log(ran2(iseed))
         end if
-
+    end if
+end if
     end subroutine update_pos
 
 
@@ -423,6 +430,7 @@ CONTAINS
         else
             call refract(I, N, n1/n2)
         end if
+
     end subroutine reflect_refract
 
 
@@ -454,22 +462,24 @@ CONTAINS
         implicit none
 
         type(vector), intent(INOUT) :: I
-        type(vector), intent(INOUT) :: N
+        type(vector), intent(IN)    :: N
         real,         intent(IN)    :: eta
 
-        type(vector) :: T
+        type(vector) :: T, Ntmp
 
         real :: c1, c2
 
-        c1 = (N .dot. I)
+        Ntmp = N
+
+        c1 = (Ntmp .dot. I)
         if(c1 < 0.)then
             c1 = -c1
         else
-            N = (-1.) * N
+            Ntmp = (-1.) * N
         end if
         c2 = sqrt(1. - (eta)**2 * (1.-c1**2))
 
-        T = eta*I + (eta * c1 - c2) * N 
+        T = eta*I + (eta * c1 - c2) * Ntmp 
 
         I = T
 
@@ -496,6 +506,9 @@ CONTAINS
         if(sint2 > 1.)then
             tir = 1.0
             return
+        elseif(costt == 1.)then
+            tir = 0.
+            return
         else
             sint2 = (n1/n2)*sintt
             cost2 = sqrt(1. - sint2 * sint2)
@@ -503,7 +516,7 @@ CONTAINS
             f2 = abs((n1*cost2 - n2*costt) / (n1*cost2 + n2*costt))**2
 
             tir = 0.5 * (f1 + f2)
-        if(isnan(tir) .or. tir > 1. .or. tir < 0.)print*,'TIR: ', tir!, f1, f2, cost,sint,cost,sint2
+        if(isnan(tir) .or. tir > 1. .or. tir < 0.)print*,'TIR: ', tir, f1, f2, costt,sintt,cost2,sint2
             return
         end if
     end function fresnel
@@ -549,13 +562,51 @@ CONTAINS
             taurun = taurun + taucell
             d = d + dcell
             call update_pos(xcur, ycur, zcur, celli, cellj, cellk, dcell, .TRUE., dir, delta, tmp, iseed, &
-                            tau, taurun)
+                            tau, taurun,.false.)
 
             if(celli == -1 .or. cellj == -1 .or. cellk == -1)then
                 exit
             end if
         end do
     end subroutine taufind1
+
+
+    subroutine tauquick(xcell, ycell, zcell, zp, delta, taurun)
+
+        use constants,   only : nzg, zmax
+        use iarray,      only : refrac, rhokap, zface
+        use opt_prop,    only : material, wavelength
+        use photon_vars, only : nzp
+
+        implicit none
+
+
+        integer, intent(IN)  :: xcell, ycell, zcell
+        real,    intent(IN)  :: zp, delta
+        real,    intent(OUT) :: taurun
+
+        integer :: cellk
+        real    :: n1, tau, dcell, taucell, zcur
+
+        taurun = 0.
+
+        zcur = zp + zmax
+
+        do cellk = zcell, nzg
+
+            dcell = (zface(cellk+1) - zcur)/nzp
+            taucell = dcell * rhokap(xcell, ycell, cellk, wavelength + material)
+            taurun = taurun + taucell
+            zcur = zface(cellk+1) + delta
+            n1 = refrac(xcell, ycell, cellk)
+            if(n1 == 1.38)then
+                material = 1
+            else
+                material = 3
+            end if
+        end do
+! call exit(0)
+    end subroutine tauquick
    
 
     subroutine peeling(xcell,ycell,zcell,delta,flag)
@@ -574,7 +625,10 @@ CONTAINS
         logical, intent(IN)    :: flag
         real                   :: cosa, tau1, prob, xim, yim, bin_wid,xpold,ypold
         real                   :: nxpold, nypold, nzpold, hgfact,zpold, tau3
-        integer                :: binx, biny, xcellold, ycellold, zcellold
+        integer                :: binx, biny, xcellold, ycellold, zcellold, matold, wavold
+
+
+        ! print'(6(F9.5,1X),5(I3.3,1X))',nxp,nyp,nzp,xp,yp,zp,xcell,ycell,zcell,material,wavelength
 
         nxpold = nxp
         nypold = nyp
@@ -583,6 +637,9 @@ CONTAINS
         xcellold = xcell
         ycellold = ycell
         zcellold = zcell
+
+        matold = material
+        wavold = wavelength
 
         xpold = xp
         ypold = yp
@@ -595,12 +652,11 @@ CONTAINS
         xim = yp*cospim - xp*sinpim
         yim = zp*sintim - yp*costim*sinpim - xp*costim*cospim
 
-        ! call taufind1(xcell,ycell,zcell,delta,tau3)
-        call tau2(xcell,ycell,zcell,delta,tau3)
-
-
-        !over 4 pi for 1st fluro photon
-        prob = exp(-tau3)
+        ! call taufind1(xcell, ycell, zcell, delta, tau3)
+        call tauquick(xcell, ycell, zcell, zp, delta, tau1)
+        ! call tau2(xcell,ycell,zcell,delta,tau3)
+        ! if(tau3 /= tau1)print*,tau3, tau1
+        ! prob = exp(-tau3)
 
         bin_wid = 4.*xmax/Nbins
 
@@ -610,13 +666,14 @@ CONTAINS
         if(flag)then
             hgfact = 1./(4.*pi)
         else
-            hgfact = (1.-g2) / ((1.+g2-2.*hgg*cosa)**(1.5))/(4.*pi)
+            hgfact = (1.-g2) / ((4.*pi)*(1.+g2-2.*hgg*cosa)**(1.5))
         end if
 
         ! print*,prob*hgfact,prob,hgfact
-        prob = prob * hgfact
-
+        prob = hgfact * exp(-tau1)
         ! if(material==3)print*,material+wavelength
+                material = matold
+        wavelength = wavold
         image(binx, biny,material + wavelength) = image(binx, biny, material + wavelength) + prob
 
         nxp = nxpold
@@ -627,7 +684,10 @@ CONTAINS
         ycell = ycellold 
         zcell = zcellold 
 
+        material = matold
+        wavelength = wavold
         ! call update_voxels(xp+xmax, yp+ymax, zp+zmax, xcell, ycell, zcell)
-    
+! print'(6(F9.5,1X),5(I3.3,1X))',nxp,nyp,nzp,xp,yp,zp,xcell,ycell,zcell,material,wavelength
+!         print*,
     end subroutine peeling
 end module inttau2
