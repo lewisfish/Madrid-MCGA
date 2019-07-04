@@ -17,20 +17,18 @@ CONTAINS
         logical, intent(IN) :: dflag
 
         character(len=10) :: fn
-        integer :: i, u, j
+        integer :: u, j, i
 
         write(fn,'(F4.2)') (2.*depth-.3)
 
         if(dflag)then
-        ! inquire(iolength=i)jmeanGLOBAL
         ! jmeanGLOBAL = jmeanGLOBAL * ((2.*xmax)**2./(nphotons*numproc*(2.*xmax/nxg)*(2.*ymax/nyg)*(2.*zmax/nzg)))
 
-        ! open(newunit=u,file=trim(fileplace)//'jmean/jmean.dat', access='direct',form='unformatted',status='replace',recl=i)
-        ! write(u,rec=1)jmeanGLOBAL
+        ! open(newunit=u,file=trim(fileplace)//'jmean/jmean.dat', access='stream',form='unformatted',status='replace')
+        ! write(u)jmeanGLOBAL
         ! close(u)
-        inquire(iolength=i)jmeanGLOBAL(:,:,:,1)
-        open(newunit=u,file=trim(fileplace)//'jmean/1064.dat', access='direct',form='unformatted',status='replace',recl=i)
-        write(u,rec=1)jmeanGLOBAL(:,:,:,2)+jmeanGLOBAL(:,:,:,4)
+        open(newunit=u,file=trim(fileplace)//'jmean/1064.dat', access='stream',form='unformatted',status='replace')
+        write(u)jmeanGLOBAL(:,:,:,2)+jmeanGLOBAL(:,:,:,4)
         close(u)
 
         open(newunit=u,file=trim(fileplace)//'im/image-1064-'//trim(fn)//'.dat',status='replace')
@@ -44,31 +42,29 @@ CONTAINS
             write(u,*)imageGLOBAL(i,0,2)+imageGLOBAL(i,0,4)
         end do
         
-        open(newunit=u,file=trim(fileplace)//'im/plot.gp',status='replace')
-        write(u,*) 'set terminal pngcairo size 1920,1080'
-        write(u,*) 'set output "prob-scatt-1064-'//trim(fn)//'.png"'
-        write(u,*) 'p"image-1064-'//trim(fn)//'.dat" matrix w image'
-        close(u)
-#ifdef intel
-        i = chdir(trim(fileplace)//'im/')
-#else
-        call chdir(trim(fileplace)//'im/',i)
-#endif  
-        call system('gnuplot plot.gp')
+        ! open(newunit=u,file=trim(fileplace)//'im/plot.gp',status='replace')
+        ! write(u,*) 'set terminal pngcairo size 1920,1080'
+        ! write(u,*) 'set output "prob-scatt-1064-'//trim(fn)//'.png"'
+        ! write(u,*) 'p"image-1064-'//trim(fn)//'.dat" matrix w image'
+        ! close(u)
+! #ifdef intel
+!         i = chdir(trim(fileplace)//'im/')
+! #else
+!         call chdir(trim(fileplace)//'im/',i)
+! #endif  
+        ! call system('gnuplot plot.gp')
 
         else
-        inquire(iolength=i)absorbGLOBAL
         absorbGLOBAL = absorbGLOBAL * ((2.*xmax)**2./(nphotons*numproc*(2.*xmax/nxg)*(2.*ymax/nyg)*(2.*zmax/nzg)))
 
-        open(newunit=u,file=trim(fileplace)//'jmean/absorb.dat', access='direct',form='unformatted',status='replace',recl=i)
-        write(u,rec=1)absorbGLOBAL
+        open(newunit=u,file=trim(fileplace)//'jmean/absorb.dat', access='stream',form='unformatted',status='replace')
+        write(u)absorbGLOBAL
         close(u)
 
-        ! inquire(iolength=i)jmeanGLOBAL
         ! jmeanGLOBAL = jmeanGLOBAL * ((2.*xmax)**2./(nphotons*numproc*(2.*xmax/nxg)*(2.*ymax/nyg)*(2.*zmax/nzg)))
 
-        ! open(newunit=u,file=trim(fileplace)//'jmean/jmean.dat', access='direct',form='unformatted',status='replace',recl=i)
-        ! write(u,rec=1)jmeanGLOBAL
+        ! open(newunit=u,file=trim(fileplace)//'jmean/jmean.dat', access='stream',form='unformatted',status='replace')
+        ! write(u)jmeanGLOBAL
         ! close(u)
         end if
 

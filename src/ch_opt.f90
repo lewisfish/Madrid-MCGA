@@ -3,7 +3,7 @@ MODULE ch_opt
 implicit none
 
 private
-public :: init_opt1, init_opt2, init_opt3, init_opt4, init_jacq
+public :: init_opt1, init_opt2, init_opt3, init_opt4, init_intra
 
 CONTAINS
    
@@ -84,23 +84,32 @@ CONTAINS
    end subroutine init_opt4
 
 
-   subroutine init_jacq()
+   subroutine init_intra(wavecur)
    !
-   !  subroutine to set tissue optical properties to jacques 1993 paper. 630nm rat tissue
-   !
-      use opt_prop, only : hgg, g2, mua, mus, kappa, albedo
-      
-      implicit none
+   !  subroutine to set intralipid optical properties
+   !  from supercontinuum laser based optical characterization of intralipid phantoms in the 500-2250nm range
 
-      hgg = 0.86
-      g2  = hgg*2
-      mua = 0.23
-      mus = 21. / (1. - hgg)
+   use opt_prop
+   
+   implicit none
 
-      kappa  = mus + mua 
-      albedo = mus / kappa
+   real, intent(IN) :: wavecur
 
-   end subroutine init_jacq
+   real :: fact, phipr
+
+   phipr = (2.d0 / 100.d0) * 22.7d0
+   fact = phipr / .227d0
+   mus = 1.868d10 * wavecur**(-2.59d0)
+   mus = mus * fact
+
+   hgg = 0.7d0
+   g2  = hgg**2.
+   mua = 0.d0
+
+   kappa  = mus + mua 
+   albedo = mus / kappa
+
+   end subroutine init_intra
 
 
    subroutine sample(array, size_of, cdf, wave, iseed)

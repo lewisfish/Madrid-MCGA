@@ -27,7 +27,7 @@ use writer_mod
 implicit none
 
 integer, intent(IN) :: id, numproc
-real,    intent(IN) :: depth
+real,    intent(INOUT) :: depth
 logical, intent(IN) :: dflag
 
 integer           :: nphotons, iseed
@@ -62,8 +62,6 @@ open(10,file=trim(resdir)//'input.params',status='old')
    read(10,*) zmax
    close(10)
 
-   zmax = depth
-
 ! set seed for rnd generator. id to change seed for each process
 iseed=-456123456+id
 
@@ -80,8 +78,15 @@ if(id == 0)then
    print*,'# of photons to run',dble(nphotons)*dble(numproc)
 end if
 
+! print*,depth
+depth = depth - 2.277428d0  ! remove volume around crystal 1ml = 1cm^3
+print*,depth
+! stop
+depth = depth / (2.92d0**2) ! get distance in cm from top of crystal to top of intralipid
+depth = depth + .029d0      ! add on crystal depth
+
 !***** Set up density grid *******************************************
-call gridset(id)
+call gridset(id, depth)
 
 !***** Set small distance for use in optical depth integration routines 
 !***** for roundoff effects when crossing cell walls
@@ -112,7 +117,7 @@ call MPI_BARRIER(MPI_COMM_WORLD, error)
 
 if(id == 0)then
    call writer(nphotons,numproc,depth,dflag)
-   print*,'write done',nscattGLOBAL/(numproc*nphotons)
+   print*,'write done',nscattGLOBAL/real(numproc*nphotons)
 end if
 end subroutine mcpolar
 
@@ -124,6 +129,7 @@ subroutine emit(nphotons, iseed, delta, nscatt, id,dflag)
     use sourceph_mod
     use inttau2
     use stokes_mod
+    use utils, only : str
 
     implicit none
 
@@ -134,9 +140,10 @@ subroutine emit(nphotons, iseed, delta, nscatt, id,dflag)
     logical, intent(IN)    :: dflag
 
     integer :: j, xcell, ycell, zcell
-    real    :: ran2, ran
+    real    :: ran2, ran, start, finish, tmp
     logical :: tflag
 
+    call cpu_time(start)
     do j = 1, nphotons
 
         wavelength = 0
@@ -146,6 +153,23 @@ subroutine emit(nphotons, iseed, delta, nscatt, id,dflag)
 
         if(mod(j,100000) == 0)then
             print *, j,' scattered photons completed on core: ',id
+        end if
+
+        if(j == 100000 .and. id == 0)then
+            call cpu_time(finish)
+            print*,' '
+            tmp = (finish-start)/100000.*real(nphotons)
+            if(tmp >= 60.)then
+                tmp = tmp / 60.
+                if(tmp > 60)then
+                    tmp = tmp / 60.
+                    print*,str(tmp),' hrs'
+                else
+                    print*,str(tmp),' mins'
+                end if
+            else
+                print*, str(tmp),' s'
+            end if
         end if
 
         call sourceph(xcell,ycell,zcell,iseed,delta)
@@ -192,15 +216,15 @@ subroutine diffuse(nphotons, iseed, delta, nscatt, id, dflag)
 
     jcount = 0
     ncount = 0
-    inquire(iolength=i)absorb
-    open(newunit=u, file=trim(fileplace)//'jmean/absorb.dat',status='old',form='unformatted',access='direct',recl=i)
-    read(u,rec=1)absorb
+    open(newunit=u, file=trim(fileplace)//'jmean/absorb.dat',status='old',form='unformatted',access='stream')
+    read(u)absorb
     close(u)
 
     tot = sum(absorb)
 
 
     do i = 1, nxg
+        print*,i
         do j = 1, nyg
             do k = 1, nzg
                 tmp = dble(nphotons) * absorb(i,j,k)/dble(tot)
@@ -223,7 +247,7 @@ subroutine diffuse(nphotons, iseed, delta, nscatt, id, dflag)
                     end if
 
                     call source_diffuse(xcell, ycell, zcell, i, j, k, iseed)
-                    call peeling(xcell,ycell,zcell,delta,.true.)
+                    call peeling(xcell,ycell,zcell,delta,.true.)!fix falg = .true.
 
                     call tauint1(xcell,ycell,zcell,tflag,iseed,delta,dflag)
                     if(.not. tflag)then

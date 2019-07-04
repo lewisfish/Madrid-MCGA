@@ -3,64 +3,29 @@ MODULE subs
     implicit none
     save
 
-    CONTAINS
+    contains
         
         subroutine directory
         !  subroutine defines vars to hold paths to various folders   
         !   
         !   
-            use constants, only : cwd,homedir,fileplace,resdir
-
-#ifdef intel
-            use ifport
-#endif
+            use constants, only : cwd, homedir, fileplace, resdir
 
             implicit none
 
-            integer :: io
-
             !get current working directory
-#ifdef intel
-            io = getcwd(cwd)
-#else
-            CALL getcwd(cwd)
-#endif
 
-            !get 'home' dir from cwd
+            call get_environment_variable('PWD', cwd)
+
+            ! get 'home' dir from cwd
             homedir = trim(cwd(1:len(trim(cwd))-3))
-            !get data dir
-            fileplace = trim(homedir) // 'data/'
-
-            !checks to see if data folder exists, if not creates it.
-#ifdef intel
-            io = chdir(fileplace)
-#else
-            call chdir(fileplace,io)
-#endif
-
-            if(io /= 0)then
-                print*,'data directory does not exist...'
-                print*, 'creating directory...'
-#ifdef intel
-                io = system("mkdir " // fileplace)
-                io = chdir(fileplace)
-                io = system("mkdir jmean/")
-                io = system("mkdir deposit/")
-                io = system("mkdir im/")
-#else
-                call system("mkdir " // fileplace)
-                call chdir(fileplace,io)
-                call system("mkdir jmean/")
-                call system("mkdir deposit/")
-                call system("mkdir im/")
-                print*, 'created directory ',trim(fileplace)
-#endif
-            end if
-
-            !get res dir
+            ! get data dir
+            fileplace = trim(homedir)//'data/'
+            ! get res dir
             resdir = trim(homedir)//'res/'
 
         end subroutine directory
+
 
         subroutine zarray
         !   sets all arrays to zero
@@ -69,7 +34,6 @@ MODULE subs
             use iarray
 
             implicit none
-
 
             xface = 0.
             yface = 0.
@@ -83,8 +47,8 @@ MODULE subs
             jmeanGLOBAL = 0.
             absorb = 0.
             absorbGLOBAL = 0.
-
         end subroutine zarray
+
 
         subroutine alloc_array
         !   subroutine allocates allocatable arrays
@@ -102,6 +66,5 @@ MODULE subs
             imageGLOBAL(-((Nbins-1)/2):((Nbins-1)/2), -((Nbins-1)/2):((Nbins-1)/2),4))
             allocate(jmean(nxg,nyg,nzg,4), jmeanGLOBAL(nxg,nyg,nzg,4))
             allocate(absorb(nxg, nyg, nzg), absorbGLOBAL(nxg, nyg, nzg))
-
         end subroutine alloc_array
 end MODULE subs

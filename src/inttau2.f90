@@ -193,7 +193,7 @@ CONTAINS
                xcur = xface(celli) - delta
             else
                print*,'Error in x dir in update_pos', dir, nxp, nyp, nzp
-               call exit(0)
+               error stop 
             end if
             ycur = ycur + nyp*dcell 
             zcur = zcur + nzp*dcell
@@ -205,7 +205,7 @@ CONTAINS
                 ycur = yface(cellj) - delta
             else
                 print*,'Error in y dir in update_pos', dir, nxp, nyp, nzp
-                call exit(0)
+                error stop 
             end if
             zcur = zcur + nzp*dcell
          elseif(dir(3))then
@@ -217,11 +217,11 @@ CONTAINS
                zcur = zface(cellk) - delta
             else
                print*,'Error in z dir in update_pos', dir, nxp, nyp, nzp
-               call exit(0)
+               error stop 
             end if
          else
             print*,'Error in update_pos...',dir
-            call exit(0)
+            error stop 
          end if
       else
       
@@ -297,7 +297,7 @@ CONTAINS
                 end if
             else
                 print*,'Error in reflect/refract in update_pos!'
-                call exit(0)
+                error stop 
             end if
                 nxp = incd%x
                 nyp = incd%y
@@ -309,9 +309,6 @@ CONTAINS
 
                 cost = nzp
                 sint = sqrt(1.-cost*cost)
-
-                taurun = 0.
-                tau = -log(ran2(iseed))
         end if
     end if
 end if
@@ -383,14 +380,14 @@ end if
 
         if(cella == -1)then
             if(acur < delta)then
-                acur = 2.*amax  -delta
+                acur = 2.*amax  - delta
                 cella = nag
-            elseif(acur > 2.*amax-delta)then
+            elseif(acur > 2. * amax - delta)then
                 acur = delta
                 cella = 1
             else
                 print*,'Error in Repeat_bounds...'
-                call exit(0)
+                error stop 
             end if
         end if
         if(cellb == -1)then
@@ -402,7 +399,7 @@ end if
                 cellb = 1
             else
                 print*,'Error in Repeat_bounds...'
-                call exit(0)
+                error stop 
             end if
         end if
     end subroutine repeat_bounds
@@ -605,7 +602,7 @@ end if
                 material = 3
             end if
         end do
-! call exit(0)
+! error stop 
     end subroutine tauquick
    
 

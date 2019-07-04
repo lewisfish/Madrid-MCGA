@@ -1,11 +1,13 @@
-FCOMP = mpifort
-FCFLAGS = -O2 -cpp -freal-4-real-8
-#FCFLAGS = -O2 -freal-4-real-8 -g -fcheck=all -fbounds-check -fbacktrace 
-#-ffpe-trap=zero,overflow,underflow 
-#FCFLAGS = -Wall -Wextra -pedantic
-#LDFLAGS = 
-	#goes after $^ -pg 
-#-pg goes between fcomp and fcflags
+ifeq ($(FCOMP),mpifort)
+FCFLAGS = -freal-4-real-8 -O2
+FCDEBUG = -g -fbacktrace -fcheck=all -fbounds-check -ffpe-trap=invalid,overflow,underflow,denormal
+FCBUILD = -Wall -Wextra -pedantic -std=f2008
+else ifeq ($(FCOMP),mpiifort)
+FCFLAGS = -O2 -xHOST -r8 
+FCDEBUG = -g -debug -traceback -check all -CB -CU -CA -fpe0
+#-stand f08 -assume realloc_lhs  -check all  -traceback  -warn all  -fstack-protector  -assume protect_parens  -implicitnone
+FCBUILD = -warn all -stand f08
+endif
 PROGRAM =  mcgrid
 
 SRCS =      ran2.f \
@@ -13,9 +15,9 @@ SRCS =      ran2.f \
             photon_vars.f90 \
             iarray.f90 \
             opt_prop.f90 \
+            utils.f90 \
             subs.f90 \
             ch_opt.f90 \
-            density.f90 \
             gridset.f90 \
             taufind2.f90 \
             vector_class.f90 \
@@ -24,14 +26,19 @@ SRCS =      ran2.f \
             sourceph.f90 \
             writer.f90 \
             mcpolar.f90 \
-            main.f90
-            
+            simplex_mod.f90 \
+            simpRun.f90
+                      
 OBJECTS = $(SRCS:.f90=.o)
 
 all:	$(PROGRAM)
+debug:	FCFLAGS += $(FCDEBUG)
+debug:	$(PROGRAM)
+build:	FCFLAGS += $(FCBUILD)
+build:	$(PROGRAM)
 
 $(PROGRAM):	$(OBJECTS)
-	$(FCOMP) $(FCFLAGS) -o $@ $^
+	$(FCOMP) $(FCFLAGS) -o $@ $^ 
 	
 %.o:  %.f90
 	$(FCOMP)  $(FCFLAGS) -c $<
@@ -39,4 +46,4 @@ $(PROGRAM):	$(OBJECTS)
 .PHONY:	clean
 
 clean:
-	rm -f *.o *.mod *.MOD mcgrid
+	rm -f *.o *.mod *.MOD mcgridf mcgrid
